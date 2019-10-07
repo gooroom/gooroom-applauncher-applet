@@ -1,0 +1,26 @@
+Source: gooroom-applauncher-applet
+Section: gnome
+Priority: optional
+Maintainer: Gooroom Maintainers <gooroom@gooroom.kr>
+Build-Depends: automake (>= 1.13),
+               autoconf,
+               autotools-dev,
+               debhelper (>= 10),
+               gnome-pkg-tools (>= 0.17),
+               gnome-common,
+               libgnome-menu-3-dev,
+               intltool (>= 0.35.0),
+               libglib2.0-dev (>= 2.44.0),
+               libgtk-3-dev (>= 3.20.0),
+               libpanel-applet-dev (>= 3.24.1),
+               libstartup-notification0-dev
+Standards-Version: 4.1.1
+Vcs-Git: https://github.com/gooroom/gooroom-applauncher-applet.git
+Vcs-Browser: https://github.com/gooroom/gooroom-applauncher-applet
+
+Package: gooroom-applauncher-applet
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: GNOME panel applet for finding and launching applications
+ The Gooroom Applauncher Applet is a applet for the GNOME panel
+ which find and launch applications installed on your system.

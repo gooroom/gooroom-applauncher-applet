@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="@GETTEXT_PACKAGE@">
+  <schema id="apps.gooroom-applauncher-applet" path="/apps/gooroom-applauncher-applet/">
+    <key name="blacklist" type="as">
+      <default>[]</default>
+      <summary>Desktop file list.</summary>
+      <description>A list of desktop file not to be displayed.</description>
+    </key>
+  </schema>
+</schemalist>
