@@ -1,0 +1,11 @@
+[Applet Factory]
+Id=GooroomApplauncherAppletFactory
+Location=@APPLET_LOCATION@
+InProcess=true
+Name=Gooroom Applauncher Applet Factory
+Description=Factory for Gooroom Applauncher Applet
+
+[GooroomApplauncherApplet]
+_Name=Gooroom Applauncher Applet
+_Description=Application launcher applet for GNOME panel
+Icon=start-here-symbolic

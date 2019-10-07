@@ -1,0 +1,41 @@
+gooroom-applauncher-applet (0.1.0+grm1u+dev24~1.gbp875809) unstable; urgency=medium
+
+  ** SNAPSHOT build @8758099e4fb9ad23723543c7444ae8ef84588016 **
+
+  [ cjheo ]
+  * Added dependency (gnome-common)
+  * updated popup window properties
+  * update back_window property
+  * updated #1
+  * Update gooroom-applauncher-applet.css file for theme
+  * Update #2
+  * update #3
+  * updated #4
+  * Update #5
+  * Updated #5
+  * Update #6
+  * Changed applauncher icon
+  * Modify applauncher window type
+  * Update #7
+  * Updated related to localization
+  * Update #8
+  * Changing the size of appitem
+  * [Bug:1311] Fixed a shortcut execution error created by the browser
+  * Fixed popup message when app fails to run
+  * Modify window to always be on top at run time
+  * [Bug:1309]Fixed an error where the search string(Korean) remained when clicking the clear icon
+  * Change size of applauncher from 48px to 24px
+
+  [ user ]
+  * Fixed working directory location error when launching application
+  * Updating sources regarding license
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Mon, 07 Oct 2019 20:43:36 +0900
+
+gooroom-applauncher-applet (0.1.0+grm1u) unstable; urgency=medium
+
+  * Initial Release
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Thu, 23 Aug 2018 16:25:22 +0900
