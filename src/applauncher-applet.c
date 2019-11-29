@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2015-2019 Gooroom <gooroom@gooroom.kr>
  *  Copyright (c) 2009 Brian Tarricone <brian@terricone.org>
  *  Copyright (C) 1999 Olivier Fourdan <fourdan@xfce.org>
+ *  Copyright (C) 2018-2019 Gooroom <gooroom@gooroom.kr>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
