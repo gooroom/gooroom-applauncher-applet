@@ -1,3 +1,12 @@
+gooroom-applauncher-applet (0.3.1+grm2u1) unstable; urgency=medium
+
+  [ user ]
+  * [633650a6] Improved blacklist handling
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Sun, 01 Dec 2019 16:30:39 +0900
+
 gooroom-applauncher-applet (0.2.0+grm2) unstable; urgency=medium
 
   * Initial Release
