@@ -66,6 +66,9 @@ struct _ApplauncherWindowPrivate
 	GtkWidget *lbx_dirs;
 	GtkWidget *cur_dir_button;
 	GtkWidget *event_box_appitem;
+	GtkWidget *inner_box_appitem;
+	GtkWidget *left_box_toplevel;
+	GtkWidget *inner_box_diritem;
 
 	GtkRadioButton *directory_group;
 
@@ -1048,6 +1051,109 @@ applauncher_window_select_all_programs (ApplauncherWindow *window)
 }
 
 static void
+setup_layout (ApplauncherWindow *window)
+{
+	GdkRectangle area;
+	GdkMonitor *primary;
+	int dirs_box_spacing = 10;
+	int d_top = 40, d_end = 10, d_bottom = 20, d_start = 10;
+	int apps_box_spacing = 20, col_spacing = 10, row_spacing = 30;
+	int a_top = 40, a_end = 20, a_bottom = 40, a_start = 20;
+	int minimum_w = 300, minimum_h = -1;
+
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	primary = gdk_display_get_primary_monitor (gdk_display_get_default ());
+	gdk_monitor_get_geometry (primary, &area);
+
+	priv->grid_x = 4;
+	priv->grid_y = 5;
+	priv->icon_size = 48;
+
+	while (1) {
+		if (area.width < 578) {
+			priv->grid_y = 2;
+			minimum_w = 224;
+			apps_box_spacing = 10, col_spacing = 0;
+			a_start = 10, a_end = 10;
+			break;
+		}
+		if (area.width < 654) {
+			priv->grid_y = 2;
+			minimum_w = 224;
+			break;
+		}
+		if (area.width < 707) {
+			priv->grid_y = 2;
+			minimum_w = 300;
+			break;
+		}
+		if (area.width < 783) {
+			priv->grid_y = 3;
+			minimum_w = 224;
+			break;
+		}
+		if (area.width < 836) {
+			priv->grid_y = 3;
+			minimum_w = 300;
+			break;
+		}
+		if (area.width < 912) {
+			priv->grid_y = 4;
+			minimum_w = 224;
+			break;
+		}
+		if (area.width < 965) {
+			priv->grid_y = 4;
+			minimum_w = 300;
+			break;
+		}
+		if (area.width < 1041) {
+			priv->grid_y = 5;
+			minimum_w = 224;
+			break;
+		}
+
+		break;
+	}
+
+	while (1) {
+		if (area.height <= 486 + 60) {
+			priv->grid_x = 3;
+			dirs_box_spacing = 3, row_spacing = 10;
+			d_top = 10, a_top = 5, a_bottom = 5;
+			break;
+		}
+		if (area.height <= 546 + 60) {
+			priv->grid_x = 3;
+			dirs_box_spacing = 5, row_spacing = 15;
+			d_top = 20, a_top = 10, a_bottom = 10;
+			break;
+		}
+
+		break;
+	}
+
+	gtk_widget_set_size_request (priv->left_box_toplevel, minimum_w, minimum_h);
+
+	gtk_widget_set_margin_top (priv->inner_box_diritem, d_top);
+	gtk_widget_set_margin_end (priv->inner_box_diritem, d_end);
+	gtk_widget_set_margin_bottom (priv->inner_box_diritem, d_bottom);
+	gtk_widget_set_margin_start (priv->inner_box_diritem, d_start);
+
+	gtk_widget_set_margin_top (priv->inner_box_appitem, a_top);
+	gtk_widget_set_margin_end (priv->inner_box_appitem, a_end);
+	gtk_widget_set_margin_bottom (priv->inner_box_appitem, a_bottom);
+	gtk_widget_set_margin_start (priv->inner_box_appitem, a_start);
+
+	gtk_box_set_spacing (GTK_BOX (priv->lbx_dirs), dirs_box_spacing);
+	gtk_box_set_spacing (GTK_BOX (priv->inner_box_appitem), apps_box_spacing);
+
+	gtk_grid_set_row_spacing (GTK_GRID (priv->grid), row_spacing);
+	gtk_grid_set_column_spacing (GTK_GRID (priv->grid), col_spacing);
+}
+
+static void
 applauncher_window_init (ApplauncherWindow *window)
 {
 	ApplauncherWindowPrivate *priv;
@@ -1083,31 +1189,7 @@ applauncher_window_init (ApplauncherWindow *window)
 		gtk_widget_set_visual (GTK_WIDGET(window), visual);
 	}
 
-	GdkRectangle area;
-	GdkMonitor *primary;
-
-	primary = gdk_display_get_primary_monitor (gdk_display_get_default ());
-	gdk_monitor_get_geometry (primary, &area);
-
-	double suggested_size = pow (area.width * area.height, (double)(1.0/3.0)) / 1.6;
-
-	if (suggested_size < 27) {
-		priv->icon_size = 16;
-	} else if (suggested_size >= 27 && suggested_size < 40) {
-		priv->icon_size = 24;
-	} else if (suggested_size >= 40 && suggested_size < 56) {
-		priv->icon_size = 32;
-	} else if (suggested_size >= 56) {
-		priv->icon_size = 48;
-	}
-
-	if ((area.width / area.height) < 1.4) { // Monitor 5:4, 4:3
-		priv->grid_x = 4;
-		priv->grid_y = 4;
-	} else { // Monitor 16:9
-		priv->grid_x = 3;
-		priv->grid_y = 6;
-	}
+	setup_layout (window);
 
 	apply_blacklist ();
 
@@ -1222,6 +1304,9 @@ applauncher_window_class_init (ApplauncherWindowClass *klass)
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, stk_bottom);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, lbx_dirs);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, event_box_appitem);
+	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, left_box_toplevel);
+	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, inner_box_diritem);
+	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, inner_box_appitem);
 }
 
 ApplauncherWindow *

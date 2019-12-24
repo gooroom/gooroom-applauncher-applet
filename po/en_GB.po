@@ -7,10 +7,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gooroom-applauncher-applet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-12-28 01:53+0900\n"
+"POT-Creation-Date: 2020-01-03 14:40+0900\n"
 "PO-Revision-Date: 2018-12-28 01:53+0900\n"
 "Language-Team: gooroom <gooroom@gooroom.kr>\n"
-"Language: en_GB\n"
+"Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -30,11 +30,11 @@ msgstr ""
 "Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
 "\"."
 
-#: ../src/applauncher-applet.c:543
+#: ../src/applauncher-applet.c:558
 msgid "Failed to launch application"
 msgstr "Failed to launch application"
 
-#: ../src/applauncher-window.c:864
+#: ../src/applauncher-window.c:824
 msgid "All Programs"
 msgstr "All Programs"
 

@@ -436,6 +436,21 @@ xfce_spawn_on_screen (GdkScreen    *screen,
                                                 NULL, error);
 }
 
+static void
+get_monitor_geometry (GooroomApplauncherApplet *applet,
+                      GdkRectangle             *geometry)
+{
+	GdkDisplay *d;
+	GdkWindow  *w;
+	GdkMonitor *m;
+
+	d = gdk_display_get_default ();
+	w = gtk_widget_get_window (applet->priv->button);
+	m = gdk_display_get_monitor_at_window (d, w);
+
+	gdk_monitor_get_geometry (m, geometry);
+}
+
 static gchar *
 desktop_working_directory_get (const gchar *id)
 {
@@ -558,43 +573,51 @@ on_popup_window_closed (ApplauncherWindow *window,
 static void
 on_popup_window_realized (GtkWidget *widget, gpointer data)
 {
+	gint x, y;
+	GdkRectangle m;
+	PanelAppletOrient orientation;
+	GtkAllocation button_alloc, popup_alloc;
+
 	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
 
 	if (!gtk_widget_get_realized (widget))
 		gtk_widget_realize (widget);
 
-	GtkAllocation alloc, popup_alloc;
-	gint orientation, x = 0, y = 0;
+	orientation = panel_applet_get_orient (PANEL_APPLET (applet));
 
-	/* retrieve geometry parameters and move window appropriately */
-	orientation = panel_applet_get_orient (PANEL_APPLET (PANEL_APPLET (applet)));
-	gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (applet)), &x, &y);
-
-	gtk_widget_get_allocation (GTK_WIDGET (applet), &alloc);
+	gdk_window_get_origin (gtk_widget_get_window (applet->priv->button), &x, &y);
+	gtk_widget_get_allocation (applet->priv->button, &button_alloc);
 	gtk_widget_get_allocation (widget, &popup_alloc);
+
+	get_monitor_geometry (applet, &m);
+
+	gtk_window_set_screen (GTK_WINDOW (widget),
+                       gtk_widget_get_screen (GTK_WIDGET (applet)));
 
 	switch (orientation) {
 		case PANEL_APPLET_ORIENT_DOWN:
-			x += alloc.x;
-			y += alloc.y + alloc.height;
-			break;
+			if ((x + popup_alloc.width) > (m.x + m.width))
+				x -= ((x + popup_alloc.width) - (m.x + m.width));
+			y += button_alloc.height;
+		break;
 
 		case PANEL_APPLET_ORIENT_UP:
-			x += alloc.x;
-			y += alloc.y;
+			if ((x + popup_alloc.width) > (m.x + m.width))
+				x -= ((x + popup_alloc.width) - (m.x + m.width));
 			y -= popup_alloc.height;
-			break;
+		break;
 
 		case PANEL_APPLET_ORIENT_RIGHT:
-			y += alloc.y;
-			x += alloc.x + alloc.width;
-			break;
+			x += button_alloc.width;
+			if ((y + popup_alloc.height) > (m.y + m.height))
+				y -= ((y + popup_alloc.height) - (m.y + m.height));
+		break;
 
 		case PANEL_APPLET_ORIENT_LEFT:
-			y += alloc.y;
-			x += alloc.x;
 			x -= popup_alloc.width;
-			break;
+			if ((y + popup_alloc.height) > (m.y + m.height))
+				y -= ((y + popup_alloc.height) - (m.y + m.height));
+		break;
 
 		default:
 			g_assert_not_reached ();
@@ -647,7 +670,6 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
                                           GtkAllocation *allocation)
 {
 	gint size;
-	GtkAllocation alloc;
 	GtkOrientation orientation;
 
 	GooroomApplauncherApplet *applet;
@@ -656,18 +678,16 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
 	applet = GOOROOM_APPLAUNCHER_APPLET (widget);
 	priv = applet->priv;
 
-	GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->size_allocate (widget, allocation);
-
 	orientation = panel_applet_get_gtk_orientation (PANEL_APPLET (applet));
 
-	gtk_widget_get_allocation (widget, &alloc);
-
 	if (orientation == GTK_ORIENTATION_HORIZONTAL)
-		size = alloc.height;
+		size = allocation->height;
 	else
-		size = alloc.width;
+		size = allocation->width;
 
 	gtk_widget_set_size_request (GTK_WIDGET (priv->button), size, size);
+
+	GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->size_allocate (widget, allocation);
 }
 
 static void

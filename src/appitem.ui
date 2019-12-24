@@ -9,7 +9,7 @@
     <property name="receives_default">True</property>
     <property name="relief">none</property>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="appitem_inner_box">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>

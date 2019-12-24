@@ -27,6 +27,7 @@
 
 struct _ApplauncherAppItemPrivate
 {
+	GtkWidget *appitem_inner_box;
 	GtkWidget *icon;
 	GtkWidget *label;
 
@@ -41,11 +42,41 @@ G_DEFINE_TYPE_WITH_PRIVATE (ApplauncherAppItem, applauncher_appitem, GTK_TYPE_BU
 static void
 applauncher_appitem_init (ApplauncherAppItem *item)
 {
+	GdkRectangle area;
+	GdkMonitor *primary;
+	int box_spacing = 15;
+	int top = 10, end = 10, bottom = 10, start = 10;
 	ApplauncherAppItemPrivate *priv;
 
 	priv = item->priv = applauncher_appitem_get_instance_private (item);
 
 	gtk_widget_init_template (GTK_WIDGET (item));
+
+	primary = gdk_display_get_primary_monitor (gdk_display_get_default ());
+	gdk_monitor_get_geometry (primary, &area);
+
+	while (1) {
+		if (area.height <= 540) {
+			top = 0, end = 0, bottom = 0, start = 0;
+			break;
+		}
+		if (area.height <= 720) {
+			box_spacing = 10;
+			break;
+		}
+		if (area.height <= 768) {
+			box_spacing = 10;
+			break;
+		}
+		break;
+	}
+
+	gtk_box_set_spacing (GTK_BOX (priv->appitem_inner_box), box_spacing);
+
+	gtk_widget_set_margin_top (priv->appitem_inner_box, top);
+	gtk_widget_set_margin_end (priv->appitem_inner_box, end);
+	gtk_widget_set_margin_bottom (priv->appitem_inner_box, bottom);
+	gtk_widget_set_margin_start (priv->appitem_inner_box, start);
 }
 
 static void
@@ -54,6 +85,7 @@ applauncher_appitem_class_init (ApplauncherAppItemClass *klass)
 	gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (klass),
                                   "/kr/gooroom/applauncher/ui/appitem.ui");
 
+	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherAppItem, appitem_inner_box);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherAppItem, icon);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherAppItem, label);
 }
