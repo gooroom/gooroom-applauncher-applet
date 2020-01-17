@@ -45,6 +45,8 @@
 #include "applauncher-appitem.h"
 #include "applauncher-directory-item.h"
 
+#define	PANEL_HEIGHT 60
+
 
 static gboolean on_directory_item_enter_notify_event_cb (GtkWidget     *widget,
                                                          GdkEventFocus *event,
@@ -549,6 +551,7 @@ do_search (ApplauncherWindow *window)
 				apps = g_slist_append (apps, entry);
 		} else {
 			const gchar *id = g_app_info_get_id (app_info);
+g_print ("iddddddd = %s\n", id);
 			if (match_desktop (id, priv->filter_text)) {
 				if (!find_entry (apps, entry))
 					apps = g_slist_append (apps, entry);
@@ -1118,16 +1121,20 @@ setup_layout (ApplauncherWindow *window)
 	}
 
 	while (1) {
-		if (area.height <= 486 + 60) {
+		if (area.height <= 486 + PANEL_HEIGHT) {
 			priv->grid_x = 3;
 			dirs_box_spacing = 3, row_spacing = 10;
 			d_top = 10, a_top = 5, a_bottom = 5;
 			break;
 		}
-		if (area.height <= 546 + 60) {
+		if (area.height <= 546 + PANEL_HEIGHT) {
 			priv->grid_x = 3;
 			dirs_box_spacing = 5, row_spacing = 15;
 			d_top = 20, a_top = 10, a_bottom = 10;
+			break;
+		}
+		if (area.height <= 642 + PANEL_HEIGHT) {
+			priv->grid_x = 3;
 			break;
 		}
 
