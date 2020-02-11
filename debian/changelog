@@ -1,3 +1,13 @@
+gooroom-applauncher-applet (0.3.2+grm2u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [fe6a6c11] 저해상도에서 UI 잘리는 이슈 처리 다중모니터 연결 시 팝업위치 조정
+  * [5103ac0c] 해상도 높이가 624px 일때 팝업위치 오류 수정
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Tue, 11 Feb 2020 09:42:24 +0900
+
 gooroom-applauncher-applet (0.3.1+grm2u2) unstable; urgency=medium
 
   [ cjheo ]
