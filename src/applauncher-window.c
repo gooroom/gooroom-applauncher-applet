@@ -551,7 +551,6 @@ do_search (ApplauncherWindow *window)
 				apps = g_slist_append (apps, entry);
 		} else {
 			const gchar *id = g_app_info_get_id (app_info);
-g_print ("iddddddd = %s\n", id);
 			if (match_desktop (id, priv->filter_text)) {
 				if (!find_entry (apps, entry))
 					apps = g_slist_append (apps, entry);
