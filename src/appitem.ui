@@ -12,6 +12,7 @@
       <object class="GtkBox" id="appitem_inner_box">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">10</property>
         <property name="orientation">vertical</property>
         <property name="spacing">15</property>
         <child>
@@ -20,9 +21,10 @@
             <property name="can_focus">False</property>
             <property name="valign">center</property>
             <property name="icon_name">applications-other</property>
+            <property name="icon_size">6</property>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
@@ -33,6 +35,7 @@
             <property name="can_focus">False</property>
             <property name="justify">center</property>
             <property name="wrap">True</property>
+            <property name="wrap_mode">word-char</property>
             <property name="ellipsize">end</property>
             <property name="max_width_chars">1</property>
             <property name="lines">2</property>
@@ -40,7 +43,6 @@
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="pack_type">end</property>
             <property name="position">1</property>
           </packing>
         </child>

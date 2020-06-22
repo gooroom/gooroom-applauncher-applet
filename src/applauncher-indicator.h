@@ -51,21 +51,22 @@ struct _ApplauncherIndicator
 	ApplauncherIndicatorPrivate *priv;
 };
 
-GType applauncher_indicator_get_type   (void) G_GNUC_CONST;
+GType                 applauncher_indicator_get_type                (void) G_GNUC_CONST;
+ApplauncherIndicator *applauncher_indicator_new                     (void);
 
-ApplauncherIndicator *applauncher_indicator_new        (void);
+GList                *applauncher_indicator_get_children            (ApplauncherIndicator *indicator);
 
-GList *applauncher_indicator_get_children (ApplauncherIndicator *indicator);
+void                  applauncher_indicator_append                  (ApplauncherIndicator *indicator);
 
-void applauncher_indicator_append (ApplauncherIndicator *indicator);
+void                  applauncher_indicator_reset                   (ApplauncherIndicator *indicator);
 
-gint applauncher_indicator_get_active (ApplauncherIndicator *indicator);
+gint                  applauncher_indicator_get_active              (ApplauncherIndicator *indicator);
 
-void applauncher_indicator_set_active (ApplauncherIndicator *indicator,
-                                       gint                  index);
+void                  applauncher_indicator_set_active              (ApplauncherIndicator *indicator,
+                                                                     gint                  index);
 
-void applauncher_indicator_set_active_no_signal (ApplauncherIndicator *indicator,
-                                                 gint                  index);
+void                  applauncher_indicator_set_active_no_signal    (ApplauncherIndicator *indicator,
+                                                                     gint                  index);
 
 G_END_DECLS
 

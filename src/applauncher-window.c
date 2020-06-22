@@ -45,7 +45,9 @@
 #include "applauncher-appitem.h"
 #include "applauncher-directory-item.h"
 
-#define	PANEL_HEIGHT 60
+#define	DEFAULT_GRID_X    4
+#define	DEFAULT_GRID_Y    5
+#define	DEFAULT_ICON_SIZE 48
 
 
 static gboolean on_directory_item_enter_notify_event_cb (GtkWidget     *widget,
@@ -68,9 +70,6 @@ struct _ApplauncherWindowPrivate
 	GtkWidget *lbx_dirs;
 	GtkWidget *cur_dir_button;
 	GtkWidget *event_box_appitem;
-	GtkWidget *inner_box_appitem;
-	GtkWidget *left_box_toplevel;
-	GtkWidget *inner_box_diritem;
 
 	GtkRadioButton *directory_group;
 
@@ -79,6 +78,7 @@ struct _ApplauncherWindowPrivate
 	ApplauncherIndicator *pages;
 
 	GSList *dirs;
+	GSList *apps;
 	GSList *cur_apps;
 	GSList *filtered_apps;
 
@@ -92,6 +92,11 @@ struct _ApplauncherWindowPrivate
 	int y;
 	int width;
 	int height;
+
+	int init_popup_width;
+	int init_popup_height;
+
+	GdkRectangle workarea;
 
 	gchar *filter_text;
 
@@ -109,7 +114,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 
 
 G_DEFINE_TYPE_WITH_PRIVATE (ApplauncherWindow, applauncher_window, GTK_TYPE_WINDOW)
-
 
 
 static gboolean
@@ -405,13 +409,16 @@ get_total_pages (ApplauncherWindow *window, GSList *list)
 	ApplauncherWindowPrivate *priv = window->priv;
 
 	guint size = 0;
-	int num_pages = 0;
+	gint  num_pages = 0;
 
 	size = g_slist_length (list);
-	num_pages = (int)(size / (priv->grid_y * priv->grid_x));
 
-	if ((size %  (priv->grid_y * priv->grid_x)) > 0) {
-		num_pages += 1;
+	if (size > 0 && priv->grid_x > 0 && priv->grid_y > 0) {
+		num_pages = (int)(size / (priv->grid_y * priv->grid_x));
+
+		if ((size %  (priv->grid_y * priv->grid_x)) > 0) {
+			num_pages += 1;
+		}
 	}
 
 	return num_pages;
@@ -466,7 +473,7 @@ update_grid (ApplauncherWindow *window)
 				ApplauncherAppItem *item = g_list_nth_data (priv->grid_children, pos);
 				if (item) {
 					gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
-					applauncher_appitem_change_app (item, NULL, "", "");
+					applauncher_appitem_change_app (item, NULL, NULL, NULL);
 				}
 			}
 		}
@@ -514,7 +521,7 @@ update_grid (ApplauncherWindow *window)
 				}
 			} else { // fill with a blank one
 				gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
-				applauncher_appitem_change_app (item, NULL, "", "");
+				applauncher_appitem_change_app (item, NULL, NULL, NULL);
 			}
 
 			item_iter++;
@@ -807,8 +814,43 @@ on_directory_item_toggled_cb (GtkToggleButton *button,
 	}
 }
 
+static gint
+get_max_size_of_appitem (ApplauncherWindow *window)
+{
+	GSList *l = NULL;
+	gint max_item_size = 0, item_width = 0, item_height = 0;
+
+	for (l = window->priv->apps; l; l = l->next) {
+		GMenuTreeEntry *entry = (GMenuTreeEntry *)l->data;
+		if (entry) {
+			GAppInfo *app_info = G_APP_INFO (gmenu_tree_entry_get_app_info (entry));
+			if (app_info) {
+				GIcon *icon = g_app_info_get_icon (app_info);
+				const gchar *name = g_app_info_get_name (app_info);
+
+				ApplauncherAppItem *item = applauncher_appitem_new (window->priv->icon_size);
+				applauncher_appitem_change_app (item, icon, name, NULL);
+				gtk_widget_show (GTK_WIDGET (item));
+
+				gtk_grid_attach (GTK_GRID (window->priv->grid), GTK_WIDGET (item), 0, 0, 1, 1);
+
+				gint max = 0, pref_w = 0, pref_h = 0;
+				gtk_widget_get_preferred_width (GTK_WIDGET (item), NULL, &pref_w);
+				gtk_widget_get_preferred_height (GTK_WIDGET (item), NULL, &pref_h);
+
+				max = (pref_w > pref_h) ? pref_w : pref_h;
+				max_item_size = (max_item_size > max) ? max_item_size: max;
+
+				gtk_widget_destroy (GTK_WIDGET (item));
+			}
+		}
+	}
+
+	return max_item_size;
+}
+
 static void
-populate_directories (ApplauncherWindow *window)
+populate_dirs (ApplauncherWindow *window)
 {
 	ApplauncherWindowPrivate *priv = window->priv;
 
@@ -818,7 +860,7 @@ populate_directories (ApplauncherWindow *window)
 
 		GIcon *icon;
 		const char *name;
-		if (gmenu_tree_directory_get_desktop_file_path(dir) != NULL) {
+		if (gmenu_tree_directory_get_desktop_file_path (dir) != NULL) {
 			icon = gmenu_tree_directory_get_icon (dir);
 			name = gmenu_tree_directory_get_name (dir);
 		} else {
@@ -846,48 +888,129 @@ populate_directories (ApplauncherWindow *window)
 }
 
 static void
-populate_grid (ApplauncherWindow *window, GSList *all_apps)
+get_rows_and_columns (ApplauncherWindow *window,
+                      GdkRectangle      *workarea,
+                      int                item_size,
+                      int               *row,
+                      int               *col)
 {
-	GSList *l = NULL;
-	gint item_width = 0, item_height = 0;
+	ApplauncherAppItem *item;
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	int size = 0;
+	int c = 0, r = 0;
+	int popup_width, popup_height;
+	int row_spacing, col_spacing;
+
+	row_spacing = gtk_grid_get_row_spacing (GTK_GRID (priv->grid));
+	col_spacing = gtk_grid_get_column_spacing (GTK_GRID (priv->grid));
+
+#if 0
+	size = item_size;
+	for (i = 1; i < DEFAULT_GRID_Y; i++) {
+		gtk_widget_set_size_request (priv->grid, size, -1);
+		gtk_widget_get_preferred_width (GTK_WIDGET (window), NULL, &popup_width);
+
+		if (popup_width >= priv->init_popup_width)
+			break;
+
+		size += (item_size + col_spacing);
+	}
+g_print ("first exceed popup_width = %d\n", popup_width);
+
+	for (c = i + 1; c < DEFAULT_GRID_Y; c++) {
+		if (popup_width >= workarea->width)
+			break;
+		popup_width += (item_size + col_spacing);
+	}
+
+	if (col) *col = c;
+
+	size = item_size;
+	for (i = 0; i < DEFAULT_GRID_X; i++) {
+		gtk_widget_set_size_request (priv->grid, -1, size);
+		gtk_widget_get_preferred_height (GTK_WIDGET (window), NULL, &popup_height);
+
+		if (popup_height >= priv->init_popup_height)
+			break;
+
+		size += (item_size + row_spacing);
+	}
+g_print ("first exceed popup_height = %d\n", popup_height);
+
+	for (r = i + 1; r < DEFAULT_GRID_X; r++) {
+		if (popup_height >= workarea->height)
+			break;
+		popup_height += (item_size + row_spacing);
+	}
+
+	if (row) *row = r;
+
+	gtk_widget_set_size_request (priv->grid, 0, 0);
+#endif
+
+	size = item_size;
+	for (c = 0; c < DEFAULT_GRID_Y; c++) {
+		gtk_widget_set_size_request (priv->grid, size, -1);
+		gtk_widget_get_preferred_width (GTK_WIDGET (window), NULL, &popup_width);
+
+		if (popup_width >= workarea->width)
+			break;
+
+		size += (item_size + col_spacing);
+	}
+
+	size = item_size;
+	for (r = 0; r < DEFAULT_GRID_X; r++) {
+		gtk_widget_set_size_request (priv->grid, -1, size);
+		gtk_widget_get_preferred_height (GTK_WIDGET (window), NULL, &popup_height);
+
+		if (popup_height >= workarea->height)
+			break;
+
+		size += (item_size + row_spacing);
+	}
+	if (col) *col = c;
+	if (row) *row = r;
+
+	gtk_widget_set_size_request (priv->grid, 0, 0);
+}
+
+static void
+populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
+{
+	GList *l = NULL;
+	int r, c, item_size;
 
 	ApplauncherWindowPrivate *priv = window->priv;
 
-	// get max size of item
-	for (l = all_apps; l; l = l->next) {
-		GMenuTreeEntry *entry = (GMenuTreeEntry *)l->data;
-		if (entry) {
-			GAppInfo *app_info = G_APP_INFO (gmenu_tree_entry_get_app_info (entry));
-			if (app_info) {
-				GIcon *icon = g_app_info_get_icon (app_info);
-				const gchar *name = g_app_info_get_name (app_info);
-
-				ApplauncherAppItem *item = applauncher_appitem_new (priv->icon_size);
-				applauncher_appitem_change_app (item, icon, name, NULL);
-				gtk_widget_show (GTK_WIDGET (item));
-
-				gtk_grid_attach (GTK_GRID (priv->grid), GTK_WIDGET (item), 0, 0, 1, 1);
-
-				gint pref_w = 0, pref_h = 0;
-				gtk_widget_get_preferred_width (GTK_WIDGET (item), NULL, &pref_w);
-				gtk_widget_get_preferred_height (GTK_WIDGET (item), NULL, &pref_h);
-
-				item_width = (item_width > pref_w) ? item_width : pref_w;
-				item_height = (item_height > pref_h) ? item_height : pref_h;
-
-				gtk_widget_destroy (GTK_WIDGET (item));
-			}
+	for (l = priv->grid_children; l; l = l->next) {
+		GtkWidget *item = GTK_WIDGET (l->data);
+		if (item) {
+			g_signal_handlers_disconnect_by_func (item, on_appitem_button_clicked_cb, window);
+			gtk_widget_destroy (GTK_WIDGET (item));
+			item = NULL;
 		}
 	}
+	g_list_free (priv->grid_children);
+	priv->grid_children = NULL;
 
-	item_width = (item_width > item_height) ? item_width : item_height;
+	// get max size of items
+	item_size = get_max_size_of_appitem (window);
 
-	int r, c;
+	if (workarea) {
+		gint grid_x = 0, grid_y = 0;
+
+		get_rows_and_columns (window, workarea, item_size, &grid_x, &grid_y);
+
+		priv->grid_x = grid_x;
+		priv->grid_y = grid_y;
+	}
+
 	for (r = 0; r < priv->grid_x; r++) {
 		for (c = 0; c < priv->grid_y; c++) {
 			ApplauncherAppItem *item = applauncher_appitem_new (priv->icon_size);
-			gtk_widget_set_size_request (GTK_WIDGET (item), item_width, item_height);
-			gtk_widget_show (GTK_WIDGET (item));
+			gtk_widget_set_size_request (GTK_WIDGET (item), item_size, item_size);
 
 			gtk_grid_attach (GTK_GRID (priv->grid), GTK_WIDGET (item), c, r, 1, 1);
 
@@ -939,6 +1062,12 @@ applauncher_window_scroll (GtkWidget      *widget,
 	}
 
 	return TRUE;
+}
+
+static void
+applauncher_window_select_all_programs (ApplauncherWindow *window)
+{
+	on_directory_item_toggled_cb (GTK_TOGGLE_BUTTON (window->priv->cur_dir_button), window);
 }
 
 static gboolean
@@ -1014,6 +1143,22 @@ applauncher_window_button_press_event (GtkWidget      *widget,
 	return GTK_WIDGET_CLASS (applauncher_window_parent_class)->button_press_event (widget, event);
 }
 
+static void
+applauncher_window_realize (GtkWidget *widget)
+{
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	gtk_widget_get_preferred_width (widget, NULL, &priv->init_popup_width);
+	gtk_widget_get_preferred_height (widget, NULL, &priv->init_popup_height);
+
+	applauncher_window_reload_apps (window, &priv->workarea);
+
+	if (GTK_WIDGET_CLASS (applauncher_window_parent_class)->realize) {
+		GTK_WIDGET_CLASS (applauncher_window_parent_class)->realize (widget);
+	}
+}
+
 static gboolean
 applauncher_window_map_event (GtkWidget   *widget,
                               GdkEventAny *event)
@@ -1047,119 +1192,6 @@ applauncher_window_focus_out_event (GtkWidget     *widget,
 }
 
 static void
-applauncher_window_select_all_programs (ApplauncherWindow *window)
-{
-	on_directory_item_toggled_cb (GTK_TOGGLE_BUTTON (window->priv->cur_dir_button), window);
-}
-
-static void
-setup_layout (ApplauncherWindow *window)
-{
-	GdkRectangle area;
-	GdkMonitor *primary;
-	int dirs_box_spacing = 10;
-	int d_top = 40, d_end = 10, d_bottom = 20, d_start = 10;
-	int apps_box_spacing = 20, col_spacing = 10, row_spacing = 30;
-	int a_top = 40, a_end = 20, a_bottom = 40, a_start = 20;
-	int minimum_w = 300, minimum_h = -1;
-
-	ApplauncherWindowPrivate *priv = window->priv;
-
-	primary = gdk_display_get_primary_monitor (gdk_display_get_default ());
-	gdk_monitor_get_geometry (primary, &area);
-
-	priv->grid_x = 4;
-	priv->grid_y = 5;
-	priv->icon_size = 48;
-
-	while (1) {
-		if (area.width < 578) {
-			priv->grid_y = 2;
-			minimum_w = 224;
-			apps_box_spacing = 10, col_spacing = 0;
-			a_start = 10, a_end = 10;
-			break;
-		}
-		if (area.width < 654) {
-			priv->grid_y = 2;
-			minimum_w = 224;
-			break;
-		}
-		if (area.width < 707) {
-			priv->grid_y = 2;
-			minimum_w = 300;
-			break;
-		}
-		if (area.width < 783) {
-			priv->grid_y = 3;
-			minimum_w = 224;
-			break;
-		}
-		if (area.width < 836) {
-			priv->grid_y = 3;
-			minimum_w = 300;
-			break;
-		}
-		if (area.width < 912) {
-			priv->grid_y = 4;
-			minimum_w = 224;
-			break;
-		}
-		if (area.width < 965) {
-			priv->grid_y = 4;
-			minimum_w = 300;
-			break;
-		}
-		if (area.width < 1041) {
-			priv->grid_y = 5;
-			minimum_w = 224;
-			break;
-		}
-
-		break;
-	}
-
-	while (1) {
-		if (area.height <= 486 + PANEL_HEIGHT) {
-			priv->grid_x = 3;
-			dirs_box_spacing = 3, row_spacing = 10;
-			d_top = 10, a_top = 5, a_bottom = 5;
-			break;
-		}
-		if (area.height <= 546 + PANEL_HEIGHT) {
-			priv->grid_x = 3;
-			dirs_box_spacing = 5, row_spacing = 15;
-			d_top = 20, a_top = 10, a_bottom = 10;
-			break;
-		}
-		if (area.height <= 642 + PANEL_HEIGHT) {
-			priv->grid_x = 3;
-			break;
-		}
-
-		break;
-	}
-
-	gtk_widget_set_size_request (priv->left_box_toplevel, minimum_w, minimum_h);
-
-	gtk_widget_set_margin_top (priv->inner_box_diritem, d_top);
-	gtk_widget_set_margin_end (priv->inner_box_diritem, d_end);
-	gtk_widget_set_margin_bottom (priv->inner_box_diritem, d_bottom);
-	gtk_widget_set_margin_start (priv->inner_box_diritem, d_start);
-
-	gtk_widget_set_margin_top (priv->inner_box_appitem, a_top);
-	gtk_widget_set_margin_end (priv->inner_box_appitem, a_end);
-	gtk_widget_set_margin_bottom (priv->inner_box_appitem, a_bottom);
-	gtk_widget_set_margin_start (priv->inner_box_appitem, a_start);
-
-	gtk_box_set_spacing (GTK_BOX (priv->lbx_dirs), dirs_box_spacing);
-	gtk_box_set_spacing (GTK_BOX (priv->inner_box_appitem), apps_box_spacing);
-
-	gtk_grid_set_row_spacing (GTK_GRID (priv->grid), row_spacing);
-	gtk_grid_set_column_spacing (GTK_GRID (priv->grid), col_spacing);
-}
-
-static void
 applauncher_window_init (ApplauncherWindow *window)
 {
 	ApplauncherWindowPrivate *priv;
@@ -1169,6 +1201,7 @@ applauncher_window_init (ApplauncherWindow *window)
 
 	priv->directory_group = NULL;
 	priv->dirs = NULL;
+	priv->apps = NULL;
 	priv->filtered_apps = NULL;
 	priv->grid_children = NULL;
 	priv->cur_apps = NULL;
@@ -1176,6 +1209,12 @@ applauncher_window_init (ApplauncherWindow *window)
 	priv->filter_text = NULL;
 	priv->idle_entry_changed_id = 0;
 	priv->idle_directory_changed_id = 0;
+	priv->grid_x = DEFAULT_GRID_X;
+	priv->grid_y = DEFAULT_GRID_Y;
+	priv->icon_size = DEFAULT_ICON_SIZE;
+
+	GdkMonitor *m = gdk_display_get_primary_monitor (gdk_display_get_default ());
+	gdk_monitor_get_geometry (m, &priv->workarea);
 
 	gtk_window_stick (GTK_WINDOW (window));
 	gtk_window_set_accept_focus (GTK_WINDOW (window), TRUE);
@@ -1195,39 +1234,23 @@ applauncher_window_init (ApplauncherWindow *window)
 		gtk_widget_set_visual (GTK_WIDGET(window), visual);
 	}
 
-	setup_layout (window);
-
 	apply_blacklist ();
 
 	priv->dirs = get_all_directories ();
+	priv->apps = get_all_applications ();
 
-	populate_directories (window);
-
-	int r, c;
-	for (r = 0; r < priv->grid_x; r++)
-		gtk_grid_insert_row (GTK_GRID (priv->grid), r);
-	for (c = 0; c < priv->grid_y; c++)
-		gtk_grid_insert_column (GTK_GRID (priv->grid), c);
-
-	GSList *all_apps = get_all_applications ();
-
-	populate_grid (window, all_apps);
+	populate_dirs (window);
 
 	priv->pages = applauncher_indicator_new ();
 	gtk_stack_add_named (GTK_STACK (priv->stk_bottom), GTK_WIDGET (priv->pages), "indicator");
+	/* 최초 윈도우 너비를 고려하여 1개만 삽입한다. */
+	applauncher_indicator_append (priv->pages);
 
-	g_signal_connect (G_OBJECT (priv->pages), "child-activate", G_CALLBACK (pages_activate_cb), window);
-
-	// set max indicators
-	int p = 0;
-	int total_pages = get_total_pages (window, all_apps);
-	for (p = 0; p < total_pages; p++) {
-		applauncher_indicator_append (priv->pages);
-	}
-	g_slist_free_full (all_apps, (GDestroyNotify)gmenu_tree_item_unref);
+	g_signal_connect (G_OBJECT (priv->pages), "child-activate",
+                      G_CALLBACK (pages_activate_cb), window);
 
 	g_signal_connect_swapped (G_OBJECT (priv->ent_search), "changed",
-               G_CALLBACK (on_search_entry_changed_cb), window);
+                              G_CALLBACK (on_search_entry_changed_cb), window);
 
 	g_signal_connect (G_OBJECT (priv->ent_search), "icon-release",
                       G_CALLBACK (on_search_entry_icon_release_cb), window);
@@ -1239,8 +1262,6 @@ applauncher_window_init (ApplauncherWindow *window)
                       G_CALLBACK (applauncher_window_scroll), window);
 
 	gtk_widget_add_events (priv->event_box_appitem, GDK_SCROLL_MASK);
-
-	applauncher_window_select_all_programs (window);
 }
 
 static void
@@ -1250,6 +1271,7 @@ applauncher_window_finalize (GObject *object)
 	ApplauncherWindowPrivate *priv = window->priv;
 
 	g_slist_free_full (priv->dirs, (GDestroyNotify)gmenu_tree_item_unref);
+	g_slist_free_full (priv->apps, (GDestroyNotify)gmenu_tree_item_unref);
 	g_slist_free_full (priv->cur_apps, (GDestroyNotify)gmenu_tree_item_unref);
 	g_slist_free (priv->filtered_apps);
 
@@ -1276,6 +1298,7 @@ applauncher_window_class_init (ApplauncherWindowClass *klass)
 
 	object_class->finalize = applauncher_window_finalize;
 	widget_class->focus_out_event = applauncher_window_focus_out_event;
+	widget_class->realize = applauncher_window_realize;
 	widget_class->map_event = applauncher_window_map_event;
 	widget_class->button_press_event = applauncher_window_button_press_event;
 	widget_class->button_release_event = applauncher_window_button_release_event;
@@ -1310,13 +1333,45 @@ applauncher_window_class_init (ApplauncherWindowClass *klass)
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, stk_bottom);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, lbx_dirs);
 	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, event_box_appitem);
-	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, left_box_toplevel);
-	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, inner_box_diritem);
-	gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), ApplauncherWindow, inner_box_appitem);
 }
 
 ApplauncherWindow *
 applauncher_window_new (void)
 {
 	return g_object_new (WINDOW_TYPE_APPLAUNCHER, NULL);
+}
+
+void
+applauncher_window_reload_apps (ApplauncherWindow *window,
+                                GdkRectangle      *workarea)
+{
+	g_return_if_fail (workarea != NULL);
+
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	populate_apps (window, workarea);
+
+	applauncher_indicator_reset (priv->pages);
+
+	int p = 0;
+	int total_pages = get_total_pages (window, priv->apps);
+	for (p = 0; p < total_pages; p++) {
+		applauncher_indicator_append (priv->pages);
+	}
+
+	applauncher_window_select_all_programs (window);
+}
+
+void
+applauncher_window_set_workarea (ApplauncherWindow *window,
+                                 GdkRectangle      *workarea)
+{
+	g_return_if_fail (workarea != NULL);
+
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	priv->workarea.x = workarea->x;
+	priv->workarea.y = workarea->y;
+	priv->workarea.width = workarea->width;
+	priv->workarea.height = workarea->height;
 }

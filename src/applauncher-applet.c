@@ -57,7 +57,9 @@
 
 struct _GooroomApplauncherAppletPrivate
 {
-	GtkWidget *button;
+	GtkWidget         *button;
+
+	ApplauncherWindow *popup_window;
 };
 
 typedef struct
@@ -445,10 +447,47 @@ get_monitor_geometry (GooroomApplauncherApplet *applet,
 	GdkMonitor *m;
 
 	d = gdk_display_get_default ();
-	w = gtk_widget_get_window (applet->priv->button);
+	w = gtk_widget_get_window (GTK_WIDGET (applet));
 	m = gdk_display_get_monitor_at_window (d, w);
 
 	gdk_monitor_get_geometry (m, geometry);
+}
+
+static void
+get_workarea (GooroomApplauncherApplet *applet, GdkRectangle *workarea)
+{
+	GtkOrientation orientation;
+	gint applet_width = 0, applet_height = 0;
+
+	get_monitor_geometry (applet, workarea);
+
+	gtk_widget_get_preferred_width (GTK_WIDGET (applet), NULL, &applet_width);
+	gtk_widget_get_preferred_height (GTK_WIDGET (applet), NULL, &applet_height);
+
+	orientation = panel_applet_get_gtk_orientation (PANEL_APPLET (applet));
+
+	switch (orientation) {
+		case PANEL_APPLET_ORIENT_DOWN:
+			workarea->y += applet_height;
+			workarea->height -= applet_height;
+		break;
+
+		case PANEL_APPLET_ORIENT_UP:
+			workarea->height -= applet_height;
+		break;
+
+		case PANEL_APPLET_ORIENT_RIGHT:
+			workarea->x += applet_width;
+			workarea->width -= applet_width;
+		break;
+
+		case PANEL_APPLET_ORIENT_LEFT:
+			workarea->width -= applet_width;
+		break;
+
+		default:
+			g_assert_not_reached ();
+	}
 }
 
 static gchar *
@@ -545,8 +584,68 @@ out:
 	return retval;
 }
 
+
+static gboolean
+set_popup_window_position (GooroomApplauncherApplet *applet)
+{
+	GdkRectangle geometry;
+	PanelAppletOrient orientation;
+	gint x, y;
+	gint popup_width, popup_height;
+	gint applet_width, applet_height;
+
+	GooroomApplauncherAppletPrivate *priv = applet->priv;
+
+	g_return_val_if_fail (priv->popup_window != NULL, FALSE);
+
+	orientation = panel_applet_get_orient (PANEL_APPLET (applet));
+
+	gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (applet)), &x, &y);
+
+	gtk_widget_get_preferred_width (GTK_WIDGET (applet), NULL, &applet_width);
+	gtk_widget_get_preferred_height (GTK_WIDGET (applet), NULL, &applet_height);
+
+	gtk_widget_get_preferred_width (GTK_WIDGET (priv->popup_window), NULL, &popup_width);
+	gtk_widget_get_preferred_height (GTK_WIDGET (priv->popup_window), NULL, &popup_height);
+
+	get_monitor_geometry (applet, &geometry);
+
+	switch (orientation) {
+		case PANEL_APPLET_ORIENT_DOWN:
+			if (x + popup_width > geometry.x + geometry.width)
+				x -= ((x + popup_width) - (geometry.x + geometry.width));
+			y += applet_height;
+		break;
+
+		case PANEL_APPLET_ORIENT_UP:
+			if (x + popup_width > geometry.x + geometry.width)
+				x -= ((x + popup_width) - (geometry.x + geometry.width));
+			y -= popup_height;
+		break;
+
+		case PANEL_APPLET_ORIENT_RIGHT:
+			x += applet_width;
+			if (y + popup_height > geometry.y + geometry.height)
+				y -= ((y + popup_height) - (geometry.y + geometry.height));
+		break;
+
+		case PANEL_APPLET_ORIENT_LEFT:
+			x -= popup_width;
+			if (y + popup_height > geometry.y + geometry.height)
+				y -= ((y + popup_height) - (geometry.y + geometry.height));
+		break;
+
+		default:
+			g_assert_not_reached ();
+	}
+
+	gtk_window_move (GTK_WINDOW (priv->popup_window), x, y);
+
+	return FALSE;
+}
+
 static void
-on_launch_desktop_cb (ApplauncherWindow *window, const gchar *desktop_id, gpointer data)
+launch_desktop_cb (ApplauncherWindow *window, const gchar *desktop_id, gpointer data)
 {
 	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
 
@@ -560,7 +659,7 @@ on_launch_desktop_cb (ApplauncherWindow *window, const gchar *desktop_id, gpoint
 }
 
 static void
-on_popup_window_closed (ApplauncherWindow *window,
+popup_window_closed_cb (ApplauncherWindow *window,
                         gint               reason,
                         gpointer           data)
 {
@@ -568,80 +667,40 @@ on_popup_window_closed (ApplauncherWindow *window,
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (applet->priv->button), FALSE);
 	gtk_widget_destroy (GTK_WIDGET (window));
+	applet->priv->popup_window = NULL;
 }
 
 static void
-on_popup_window_realized (GtkWidget *widget, gpointer data)
+popup_window_realize_cb (ApplauncherWindow *window,
+                         gpointer           data)
 {
-	gint x, y;
-	GdkRectangle m;
-	PanelAppletOrient orientation;
-	GtkAllocation button_alloc, popup_alloc;
-
 	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
 
-	if (!gtk_widget_get_realized (widget))
-		gtk_widget_realize (widget);
-
-	orientation = panel_applet_get_orient (PANEL_APPLET (applet));
-
-	gdk_window_get_origin (gtk_widget_get_window (applet->priv->button), &x, &y);
-	gtk_widget_get_allocation (applet->priv->button, &button_alloc);
-	gtk_widget_get_allocation (widget, &popup_alloc);
-
-	get_monitor_geometry (applet, &m);
-
-	gtk_window_set_screen (GTK_WINDOW (widget),
-                       gtk_widget_get_screen (GTK_WIDGET (applet)));
-
-	switch (orientation) {
-		case PANEL_APPLET_ORIENT_DOWN:
-			if ((x + popup_alloc.width) > (m.x + m.width))
-				x -= ((x + popup_alloc.width) - (m.x + m.width));
-			y += button_alloc.height;
-		break;
-
-		case PANEL_APPLET_ORIENT_UP:
-			if ((x + popup_alloc.width) > (m.x + m.width))
-				x -= ((x + popup_alloc.width) - (m.x + m.width));
-			y -= popup_alloc.height;
-		break;
-
-		case PANEL_APPLET_ORIENT_RIGHT:
-			x += button_alloc.width;
-			if ((y + popup_alloc.height) > (m.y + m.height))
-				y -= ((y + popup_alloc.height) - (m.y + m.height));
-		break;
-
-		case PANEL_APPLET_ORIENT_LEFT:
-			x -= popup_alloc.width;
-			if ((y + popup_alloc.height) > (m.y + m.height))
-				y -= ((y + popup_alloc.height) - (m.y + m.height));
-		break;
-
-		default:
-			g_assert_not_reached ();
-	}
-
-	gtk_window_move (GTK_WINDOW (widget), x, y);
+	set_popup_window_position (applet);
 }
 
 static void
 applauncher_window_popup (GooroomApplauncherApplet *applet)
 {
+	GdkRectangle workarea;
 	ApplauncherWindow *window;
 
 	GooroomApplauncherAppletPrivate *priv = applet->priv;
 
-	window = applauncher_window_new ();
+	window = priv->popup_window = applauncher_window_new ();
+	gtk_window_set_screen (GTK_WINDOW (window),
+                           gtk_widget_get_screen (GTK_WIDGET (applet)));
 
-	g_signal_connect (G_OBJECT (window), "realize", G_CALLBACK (on_popup_window_realized), applet);
-	g_signal_connect (G_OBJECT (window), "closed", G_CALLBACK (on_popup_window_closed), applet);
-	g_signal_connect (G_OBJECT (window), "launch-desktop", G_CALLBACK (on_launch_desktop_cb), applet);
+	get_workarea (applet, &workarea);
+	applauncher_window_set_workarea (window, &workarea);
 
-	gtk_widget_show (GTK_WIDGET (window));
+	g_signal_connect (G_OBJECT (window), "realize", G_CALLBACK (popup_window_realize_cb), applet);
+	g_signal_connect (G_OBJECT (window), "closed", G_CALLBACK (popup_window_closed_cb), applet);
+	g_signal_connect (G_OBJECT (window), "launch-desktop", G_CALLBACK (launch_desktop_cb), applet);
 
-	gtk_window_present_with_time (GTK_WINDOW (window), GDK_CURRENT_TIME);
+	gtk_widget_show_all (GTK_WIDGET (window));
+
+	gtk_window_present_with_time (GTK_WINDOW (window), gtk_get_current_event_time ());
 }
 
 static void
@@ -650,20 +709,74 @@ on_applet_button_toggled (GtkToggleButton *button, gpointer data)
 	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
 	GooroomApplauncherAppletPrivate *priv = applet->priv;
 
-	if (gtk_toggle_button_get_active (button)) {
+	if (gtk_toggle_button_get_active (button))
 		applauncher_window_popup (applet);
+}
+
+//static gboolean
+//popup_window_idle (gpointer data)
+//{
+//	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
+//	GooroomApplauncherAppletPrivate *priv = applet->priv;
+//
+//	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (priv->button), TRUE);
+//
+//	return FALSE;
+//}
+
+static void
+screen_size_changed_cb (GdkScreen *screen,
+                        gpointer   data)
+{
+	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
+	GooroomApplauncherAppletPrivate *priv = applet->priv;
+
+	if (priv->popup_window) {
+		gtk_widget_destroy (GTK_WIDGET (priv->popup_window));
+		priv->popup_window = NULL;
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (applet->priv->button), FALSE);
+
+//		g_timeout_add (1000, popup_window_idle, applet);
 	}
 }
 
-//static void
-//window_key_pressed_cb (const char *keystring, void *user_data)
-//{
-//	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (user_data);
-//
-//	if (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (applet->priv->button))) {
-//		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (applet->priv->button), TRUE);
-//	}
-//}
+static void
+monitors_changed_cb (GdkScreen *screen,
+                     gpointer   data)
+{
+	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (data);
+	GooroomApplauncherAppletPrivate *priv = applet->priv;
+
+	if (priv->popup_window) {
+		gtk_widget_destroy (GTK_WIDGET (priv->popup_window));
+		priv->popup_window = NULL;
+		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (applet->priv->button), FALSE);
+
+//		g_timeout_add (1000, popup_window_idle, applet);
+	}
+}
+
+static void
+gooroom_applauncher_applet_realize (GtkWidget *widget)
+{
+	if (GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->realize) {
+		GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->realize (widget);
+	}
+
+	g_signal_connect (gtk_widget_get_screen (widget), "size_changed",
+                      G_CALLBACK (screen_size_changed_cb), widget);
+}
+
+static void
+gooroom_applauncher_applet_unrealize (GtkWidget *widget)
+{
+	g_signal_handlers_disconnect_by_func (gtk_widget_get_screen (widget),
+                                          screen_size_changed_cb, widget);
+
+	if (GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->unrealize)
+		GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->unrealize (widget);
+}
+
 
 static void
 gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
@@ -672,11 +785,8 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
 	gint size;
 	GtkOrientation orientation;
 
-	GooroomApplauncherApplet *applet;
-	GooroomApplauncherAppletPrivate *priv;
-
-	applet = GOOROOM_APPLAUNCHER_APPLET (widget);
-	priv = applet->priv;
+	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (widget);
+	GooroomApplauncherAppletPrivate *priv = applet->priv;
 
 	orientation = panel_applet_get_gtk_orientation (PANEL_APPLET (applet));
 
@@ -685,14 +795,16 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
 	else
 		size = allocation->width;
 
-	gtk_widget_set_size_request (GTK_WIDGET (priv->button), size, size);
+	gtk_widget_set_size_request (priv->button, size, size);
 
-	GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->size_allocate (widget, allocation);
+	if (GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->size_allocate)
+		GTK_WIDGET_CLASS (gooroom_applauncher_applet_parent_class)->size_allocate (widget, allocation);
 }
 
 static void
 gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 {
+	GdkDisplay *display;
 	GooroomApplauncherAppletPrivate *priv;
 
 	/* Initialize i18n */
@@ -701,11 +813,14 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 
 	priv = applet->priv = gooroom_applauncher_applet_get_instance_private (applet);
 
+	priv->popup_window = NULL;
 //	keybinder_init ();
 
 //	keybinder_bind ("Super_L", window_key_pressed_cb, applet);
 
 	panel_applet_set_flags (PANEL_APPLET (applet), PANEL_APPLET_EXPAND_MINOR);
+
+	display = gdk_display_get_default ();
 
 	priv->button = gtk_toggle_button_new ();
 	gtk_button_set_relief (GTK_BUTTON (priv->button), GTK_RELIEF_NONE);
@@ -716,7 +831,11 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 	gtk_image_set_pixel_size (GTK_IMAGE (icon), TRAY_ICON_SIZE);
 	gtk_container_add (GTK_CONTAINER (priv->button), icon);
 
-	g_signal_connect (G_OBJECT (priv->button), "toggled", G_CALLBACK (on_applet_button_toggled), applet);
+	g_signal_connect (G_OBJECT (priv->button), "toggled",
+                      G_CALLBACK (on_applet_button_toggled), applet);
+
+	g_signal_connect (gdk_display_get_default_screen (display), "monitors-changed",
+                      G_CALLBACK (monitors_changed_cb), applet);
 }
 
 static void
@@ -735,6 +854,9 @@ gooroom_applauncher_applet_class_init (GooroomApplauncherAppletClass *class)
 	widget_class = GTK_WIDGET_CLASS (class);
 
 	object_class->finalize = gooroom_applauncher_applet_finalize;
+
+	widget_class->realize       = gooroom_applauncher_applet_realize;
+	widget_class->unrealize     = gooroom_applauncher_applet_unrealize;
 	widget_class->size_allocate = gooroom_applauncher_applet_size_allocate;
 }
 

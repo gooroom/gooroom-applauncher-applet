@@ -188,3 +188,22 @@ applauncher_indicator_append (ApplauncherIndicator *indicator)
 
 	priv->children = g_list_append (priv->children, item);
 }
+
+void
+applauncher_indicator_reset (ApplauncherIndicator *indicator)
+{
+	GList *l = NULL;
+	ApplauncherIndicatorPrivate *priv = indicator->priv;
+
+	for (l = priv->children; l; l = l->next) {
+		GtkWidget *item = GTK_WIDGET (l->data);
+		if (item) {
+			g_signal_handlers_disconnect_by_func (item, indicator_item_selection_changed_cb, indicator);
+			gtk_widget_destroy (GTK_WIDGET (item));
+		}
+	}
+	g_list_free (priv->children);
+	priv->children = NULL;
+	priv->indicator_group = NULL;
+	priv->active = 0;
+}
