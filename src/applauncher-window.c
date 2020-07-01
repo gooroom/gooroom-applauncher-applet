@@ -663,6 +663,26 @@ on_search_entry_changed_cb (ApplauncherWindow *window)
                                    search_entry_changed_idle_destroyed);
 }
 
+static gboolean
+search_entry_populate_popup_cb (GtkWidget *widget,
+                                gpointer   data)
+{
+  return GDK_EVENT_STOP;
+}
+
+/* button press handler used to inhibit popup menu */
+static gint
+search_entry_button_press_cb (GtkWidget      *widget,
+                              GdkEventButton *event)
+{
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS) {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+
 static void
 on_search_entry_activate_cb (GtkEditable *entry,
                              gpointer     data)
@@ -1257,6 +1277,13 @@ applauncher_window_init (ApplauncherWindow *window)
 
 	g_signal_connect (G_OBJECT (priv->ent_search), "activate",
                       G_CALLBACK (on_search_entry_activate_cb), window);
+
+	g_signal_connect (G_OBJECT (priv->ent_search), "popup-menu",
+                      G_CALLBACK (search_entry_populate_popup_cb), window);
+
+	/* button press handler used to inhibit popup menu */
+	g_signal_connect (G_OBJECT (priv->ent_search), "button_press_event",
+                      G_CALLBACK (search_entry_button_press_cb), window);
 
 	g_signal_connect (G_OBJECT (priv->event_box_appitem), "scroll-event",
                       G_CALLBACK (applauncher_window_scroll), window);
