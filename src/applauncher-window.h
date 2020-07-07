@@ -59,7 +59,7 @@ struct _ApplauncherWindow
 
 GType              applauncher_window_get_type (void) G_GNUC_CONST;
 
-ApplauncherWindow *applauncher_window_new             (void);
+ApplauncherWindow *applauncher_window_new             (GtkWidget *parent);
 
 void               applauncher_window_reload_apps     (ApplauncherWindow *window,
                                                        GdkRectangle      *workarea);

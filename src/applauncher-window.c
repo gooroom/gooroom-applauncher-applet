@@ -102,6 +102,8 @@ struct _ApplauncherWindowPrivate
 
 	guint idle_entry_changed_id;
 	guint idle_directory_changed_id;
+
+	GdkDevice *grab_pointer;
 };
 
 enum {
@@ -581,21 +583,40 @@ do_search (ApplauncherWindow *window)
 }
 
 static void
-grab_pointer (GtkWidget *widget)
+grab_pointer (ApplauncherWindow *window)
 {
-	GdkDisplay *display = gdk_display_get_default ();
+	GdkSeat *seat;
+	GdkDevice *device, *pointer;
 
-	gdk_seat_grab (gdk_display_get_default_seat (display),
-                   gtk_widget_get_window (widget),
-                   GDK_SEAT_CAPABILITY_ALL_POINTING,
-                   TRUE, NULL, NULL, NULL, NULL);
+	device = gtk_get_current_event_device ();
+
+	if (!device) {
+		GdkDisplay *display;
+
+		display = gtk_widget_get_display (GTK_WIDGET (window));
+		device = gdk_seat_get_pointer (gdk_display_get_default_seat (display));
+	}
+
+	if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
+		window->priv->grab_pointer = gdk_device_get_associated_device (device);
+	else
+		window->priv->grab_pointer = device;
+
+	gtk_widget_grab_focus (GTK_WIDGET (window));
+
+	seat = gdk_device_get_seat (window->priv->grab_pointer);
+	gdk_seat_grab (seat, gtk_widget_get_window (GTK_WIDGET (window)),
+                          GDK_SEAT_CAPABILITY_ALL, TRUE,
+                          NULL, NULL, NULL, NULL);
 }
 
 static void
-ungrab_pointer (void)
+ungrab_pointer (ApplauncherWindow *window)
 {
-	GdkDisplay *display = gdk_display_get_default();
-	gdk_seat_ungrab (gdk_display_get_default_seat (display));
+	if (window->priv->grab_pointer) {
+		gdk_seat_ungrab (gdk_device_get_seat (window->priv->grab_pointer));
+		window->priv->grab_pointer = NULL;
+	}
 }
 
 static void
@@ -936,7 +957,6 @@ get_rows_and_columns (ApplauncherWindow *window,
 
 		size += (item_size + col_spacing);
 	}
-g_print ("first exceed popup_width = %d\n", popup_width);
 
 	for (c = i + 1; c < DEFAULT_GRID_Y; c++) {
 		if (popup_width >= workarea->width)
@@ -956,7 +976,6 @@ g_print ("first exceed popup_width = %d\n", popup_width);
 
 		size += (item_size + row_spacing);
 	}
-g_print ("first exceed popup_height = %d\n", popup_height);
 
 	for (r = i + 1; r < DEFAULT_GRID_X; r++) {
 		if (popup_height >= workarea->height)
@@ -1114,7 +1133,7 @@ applauncher_window_key_press_event (GtkWidget   *widget,
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
 
 	if (event->keyval == GDK_KEY_Escape) {
-		ungrab_pointer ();
+		ungrab_pointer (window);
 		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 		return TRUE;
 	}
@@ -1154,7 +1173,7 @@ applauncher_window_button_press_event (GtkWidget      *widget,
         (event->x_root >= priv->x + priv->width) ||
         (event->y_root >= priv->y + priv->height))
 	{
-		ungrab_pointer ();
+		ungrab_pointer (window);
 		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 	} else {
 		gtk_widget_grab_focus (GTK_WIDGET (priv->ent_search));
@@ -1186,10 +1205,9 @@ applauncher_window_map_event (GtkWidget   *widget,
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
 	ApplauncherWindowPrivate *priv = window->priv;
 
-	gtk_window_set_keep_above (GTK_WINDOW (window), TRUE);
+//	gtk_window_set_keep_above (GTK_WINDOW (window), TRUE);
 
-    // Track mouse clicks outside of menu
-	grab_pointer (widget);
+	grab_pointer (window);
 
     // Focus search entry
 	gtk_widget_grab_focus (GTK_WIDGET (priv->ent_search));
@@ -1204,7 +1222,7 @@ applauncher_window_focus_out_event (GtkWidget     *widget,
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
 	ApplauncherWindowPrivate *priv = window->priv;
 
-	ungrab_pointer ();
+	ungrab_pointer (window);
 
 	g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 
@@ -1232,13 +1250,12 @@ applauncher_window_init (ApplauncherWindow *window)
 	priv->grid_x = DEFAULT_GRID_X;
 	priv->grid_y = DEFAULT_GRID_Y;
 	priv->icon_size = DEFAULT_ICON_SIZE;
+	priv->grab_pointer = NULL;
 
 	GdkMonitor *m = gdk_display_get_primary_monitor (gdk_display_get_default ());
 	gdk_monitor_get_geometry (m, &priv->workarea);
 
 	gtk_window_stick (GTK_WINDOW (window));
-	gtk_window_set_accept_focus (GTK_WINDOW (window), TRUE);
-	gtk_window_set_modal (GTK_WINDOW (window), TRUE);
 	gtk_window_set_decorated (GTK_WINDOW (window), FALSE);
 	gtk_window_set_skip_taskbar_hint (GTK_WINDOW (window), TRUE);
 	gtk_window_set_skip_pager_hint (GTK_WINDOW (window), TRUE);
@@ -1363,9 +1380,16 @@ applauncher_window_class_init (ApplauncherWindowClass *klass)
 }
 
 ApplauncherWindow *
-applauncher_window_new (void)
+applauncher_window_new (GtkWidget *parent)
 {
-	return g_object_new (WINDOW_TYPE_APPLAUNCHER, NULL);
+	GtkWidget *toplevel = gtk_widget_get_toplevel (parent);
+
+	return g_object_new (WINDOW_TYPE_APPLAUNCHER,
+                         "type", GTK_WINDOW_TOPLEVEL,
+                         "type-hint", GDK_WINDOW_TYPE_HINT_POPUP_MENU,
+                         "transient-for", toplevel,
+                         "modal", TRUE,
+                         NULL);
 }
 
 void
