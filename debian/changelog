@@ -1,3 +1,14 @@
+gooroom-applauncher-applet (0.3.3+grm2u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [7520b2df] [Bug:2050]풍선도움말이 너무 긴 경우에 대한 처리
+  * [90f74a06] 해상도 변경 대응
+  * [85424a04] Disabled popup menu from search entry
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Tue, 07 Jul 2020 12:02:34 +0900
+
 gooroom-applauncher-applet (0.3.2+grm2u1) unstable; urgency=medium
 
   [ cjheo ]
