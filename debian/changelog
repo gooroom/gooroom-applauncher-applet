@@ -1,3 +1,12 @@
+gooroom-applauncher-applet (0.3.4+grm2u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [f34dd891] 팝업 윈도우 속성 변경
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Tue, 07 Jul 2020 16:54:05 +0900
+
 gooroom-applauncher-applet (0.3.3+grm2u1) unstable; urgency=medium
 
   [ cjheo ]
