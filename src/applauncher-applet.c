@@ -44,7 +44,7 @@
 #include <libsn/sn.h>
 //#include <keybinder.h>
 
-#include <panel-applet.h>
+#include <libgnome-panel/gp-applet.h>
 
 #include "panel-glib.h"
 #include "applauncher-window.h"
@@ -75,7 +75,7 @@ typedef struct
 } XfceSpawnData;
 
 
-G_DEFINE_TYPE_WITH_PRIVATE (GooroomApplauncherApplet, gooroom_applauncher_applet, PANEL_TYPE_APPLET)
+G_DEFINE_TYPE_WITH_PRIVATE (GooroomApplauncherApplet, gooroom_applauncher_applet, GP_TYPE_APPLET)
 
 static void
 destroy_popup_window (GooroomApplauncherApplet *applet)
@@ -473,24 +473,16 @@ get_workarea (GooroomApplauncherApplet *applet, GdkRectangle *workarea)
 	gtk_widget_get_preferred_width (GTK_WIDGET (applet), NULL, &applet_width);
 	gtk_widget_get_preferred_height (GTK_WIDGET (applet), NULL, &applet_height);
 
-	orientation = panel_applet_get_gtk_orientation (PANEL_APPLET (applet));
+	orientation = gp_applet_get_orientation (GP_APPLET (applet));
 
 	switch (orientation) {
-		case PANEL_APPLET_ORIENT_DOWN:
+		case GTK_ORIENTATION_HORIZONTAL:
 			workarea->y += applet_height;
 			workarea->height -= applet_height;
 		break;
 
-		case PANEL_APPLET_ORIENT_UP:
-			workarea->height -= applet_height;
-		break;
-
-		case PANEL_APPLET_ORIENT_RIGHT:
+		case GTK_ORIENTATION_VERTICAL:
 			workarea->x += applet_width;
-			workarea->width -= applet_width;
-		break;
-
-		case PANEL_APPLET_ORIENT_LEFT:
 			workarea->width -= applet_width;
 		break;
 
@@ -598,7 +590,7 @@ static gboolean
 set_popup_window_position (GooroomApplauncherApplet *applet)
 {
 	GdkRectangle geometry;
-	PanelAppletOrient orientation;
+	GtkOrientation orientation;
 	gint x, y;
 	gint popup_width, popup_height;
 	gint applet_width, applet_height;
@@ -607,7 +599,7 @@ set_popup_window_position (GooroomApplauncherApplet *applet)
 
 	g_return_val_if_fail (priv->popup_window != NULL, FALSE);
 
-	orientation = panel_applet_get_orient (PANEL_APPLET (applet));
+	orientation = gp_applet_get_orientation (GP_APPLET (applet));
 
 	gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (applet)), &x, &y);
 
@@ -619,6 +611,31 @@ set_popup_window_position (GooroomApplauncherApplet *applet)
 
 	get_monitor_geometry (applet, &geometry);
 
+	switch (orientation) {
+		case GTK_ORIENTATION_HORIZONTAL:
+			if (x + popup_width > geometry.x + geometry.width)
+				x -= ((x + popup_width) - (geometry.x + geometry.width));
+			y += applet_height;
+
+			if (x + popup_width > geometry.x + geometry.width)
+				x -= ((x + popup_width) - (geometry.x + geometry.width));
+			y -= popup_height;
+		break;
+
+		case GTK_ORIENTATION_VERTICAL:
+			x += applet_width;
+			if (y + popup_height > geometry.y + geometry.height)
+				y -= ((y + popup_height) - (geometry.y + geometry.height));
+
+			x -= popup_width;
+			if (y + popup_height > geometry.y + geometry.height)
+				y -= ((y + popup_height) - (geometry.y + geometry.height));
+		break;
+
+		default:
+			g_assert_not_reached ();
+	}
+#if 0
 	switch (orientation) {
 		case PANEL_APPLET_ORIENT_DOWN:
 			if (x + popup_width > geometry.x + geometry.width)
@@ -647,6 +664,7 @@ set_popup_window_position (GooroomApplauncherApplet *applet)
 		default:
 			g_assert_not_reached ();
 	}
+#endif
 
 	gtk_window_move (GTK_WINDOW (priv->popup_window), x, y);
 
@@ -763,7 +781,7 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
 	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (widget);
 	GooroomApplauncherAppletPrivate *priv = applet->priv;
 
-	orientation = panel_applet_get_gtk_orientation (PANEL_APPLET (applet));
+	orientation = gp_applet_get_orientation (GP_APPLET (applet));
 
 	if (orientation == GTK_ORIENTATION_HORIZONTAL)
 		size = allocation->height;
@@ -777,14 +795,34 @@ gooroom_applauncher_applet_size_allocate (GtkWidget     *widget,
 }
 
 static void
+gooroom_applauncher_applet_finalize (GObject *object)
+{
+	G_OBJECT_CLASS (gooroom_applauncher_applet_parent_class)->finalize (object);
+}
+
+static gboolean
+gooroom_applauncher_applet_fill (GooroomApplauncherApplet *applet)
+{
+	g_return_val_if_fail (GP_IS_APPLET (applet), FALSE);
+
+	gtk_widget_show_all (GTK_WIDGET (applet));
+
+	return TRUE;
+}
+
+static void
+gooroom_applauncher_applet_constructed (GObject *object)
+{
+	GooroomApplauncherApplet *applet = GOOROOM_APPLAUNCHER_APPLET (object);
+
+	gooroom_applauncher_applet_fill (applet);
+}
+
+static void
 gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 {
 	GdkDisplay *display;
 	GooroomApplauncherAppletPrivate *priv;
-
-	/* Initialize i18n */
-	bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
-	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 
 	priv = applet->priv = gooroom_applauncher_applet_get_instance_private (applet);
 
@@ -793,7 +831,7 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 
 //	keybinder_bind ("Super_L", window_key_pressed_cb, applet);
 
-	panel_applet_set_flags (PANEL_APPLET (applet), PANEL_APPLET_EXPAND_MINOR);
+	gp_applet_set_flags (GP_APPLET (applet), GP_APPLET_FLAGS_EXPAND_MINOR);
 
 	display = gdk_display_get_default ();
 
@@ -814,12 +852,6 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 }
 
 static void
-gooroom_applauncher_applet_finalize (GObject *object)
-{
-	G_OBJECT_CLASS (gooroom_applauncher_applet_parent_class)->finalize (object);
-}
-
-static void
 gooroom_applauncher_applet_class_init (GooroomApplauncherAppletClass *class)
 {
 	GObjectClass *object_class;
@@ -828,37 +860,10 @@ gooroom_applauncher_applet_class_init (GooroomApplauncherAppletClass *class)
 	object_class = G_OBJECT_CLASS (class);
 	widget_class = GTK_WIDGET_CLASS (class);
 
+	object_class->constructed = gooroom_applauncher_applet_constructed;
 	object_class->finalize = gooroom_applauncher_applet_finalize;
 
 	widget_class->realize       = gooroom_applauncher_applet_realize;
 	widget_class->unrealize     = gooroom_applauncher_applet_unrealize;
 	widget_class->size_allocate = gooroom_applauncher_applet_size_allocate;
 }
-
-static gboolean
-gooroom_applauncher_applet_fill (GooroomApplauncherApplet *applet)
-{
-	g_return_val_if_fail (PANEL_IS_APPLET (applet), FALSE);
-
-	gtk_widget_show_all (GTK_WIDGET (applet));
-
-	return TRUE;
-}
-
-static gboolean
-gooroom_applauncher_applet_factory (PanelApplet *applet,
-                                    const gchar *iid,
-                                    gpointer     data)
-{
-	gboolean retval = FALSE;
-
-	if (!g_strcmp0 (iid, "GooroomApplauncherApplet"))
-		retval = gooroom_applauncher_applet_fill (GOOROOM_APPLAUNCHER_APPLET (applet));
-
-	return retval;
-}
-
-PANEL_APPLET_IN_PROCESS_FACTORY ("GooroomApplauncherAppletFactory",
-                                 GOOROOM_TYPE_APPLAUNCHER_APPLET,
-                                 gooroom_applauncher_applet_factory,
-                                 NULL)

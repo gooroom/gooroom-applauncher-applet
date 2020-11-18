@@ -1,4 +1,5 @@
 src/applauncher-applet.c
+src/applauncher-module.c
 src/applauncher-indicator.c
 src/applauncher-appitem.c
 src/applauncher-directory-item.c
