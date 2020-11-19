@@ -56,8 +56,11 @@ ApplauncherAppItem *applauncher_appitem_new        (int size);
 void                applauncher_appitem_change_app (ApplauncherAppItem *item,
                                                     GIcon              *icon,
                                                     const gchar        *name,
-                                                    const gchar        *tooltip);
+                                                    const gchar        *tooltip,
+                                                    const gchar        *path);
 
+cairo_surface_t    *applauncher_appitem_get_drag_surface (ApplauncherAppItem *item);
+const gchar        *applauncher_appitem_get_path (ApplauncherAppItem *item);
 
 
 G_END_DECLS

@@ -36,12 +36,13 @@ struct _ApplauncherAppItemPrivate
 	GtkWidget *tooltip;
 
 	int icon_size;
+
+	const gchar *path;
 };
 
 
 
 G_DEFINE_TYPE_WITH_PRIVATE (ApplauncherAppItem, applauncher_appitem, GTK_TYPE_BUTTON);
-
 
 static gboolean
 query_tooltip_cb (GtkWidget  *widget,
@@ -112,9 +113,7 @@ applauncher_appitem_new (int size)
 	ApplauncherAppItem *item;
 
 	item = g_object_new (APPLAUNCHER_TYPE_APPITEM, NULL);
-
 	item->priv->icon_size = size;
-
 	return item;
 }
 
@@ -122,7 +121,8 @@ void
 applauncher_appitem_change_app (ApplauncherAppItem *item,
                                 GIcon              *icon,
                                 const gchar        *name,
-                                const gchar        *tooltip)
+                                const gchar        *tooltip,
+                                const gchar        *path)
 {
 	glong size;
 	gchar buf[1024] = {0,};
@@ -166,4 +166,106 @@ applauncher_appitem_change_app (ApplauncherAppItem *item,
 	}
 	// Tooltip
 	gtk_label_set_text (GTK_LABEL (priv->tooltip), buf);
+	// Desktop file path
+	priv->path = path;
+}
+
+const gchar*
+applauncher_appitem_get_path (ApplauncherAppItem *item)
+{
+  ApplauncherAppItemPrivate *priv;
+	priv = applauncher_appitem_get_instance_private (item);
+
+  return priv->path;
+}
+
+cairo_surface_t *
+applauncher_appitem_get_drag_surface (ApplauncherAppItem *item)
+{
+  GtkWidget *widget;
+  cairo_t *cr;
+  cairo_surface_t *surface;
+  cairo_surface_t *drag_surface;
+  GtkStyleContext *context;
+
+  ApplauncherAppItemPrivate *priv;
+	priv = applauncher_appitem_get_instance_private (item);
+
+  widget = GTK_WIDGET (priv->appitem_inner_box);
+
+  context = gtk_widget_get_style_context (GTK_WIDGET (widget));
+  gtk_style_context_save (context);
+
+  surface = gdk_window_create_similar_surface (gtk_widget_get_window (widget),
+                                               CAIRO_CONTENT_COLOR_ALPHA,
+                                               priv->icon_size * 2,
+                                               priv->icon_size * 2);
+  cr = cairo_create (surface);
+
+  //Icon
+  GIcon *gicon;
+  gtk_image_get_gicon (GTK_IMAGE(priv->icon), &gicon, NULL);
+
+  const gchar *icon_name;
+  icon_name = g_icon_to_string (gicon);
+
+  GtkIconTheme *theme;
+  theme = gtk_icon_theme_get_default();
+  GtkIconInfo *info = gtk_icon_theme_lookup_icon (theme, icon_name, priv->icon_size,GTK_ICON_LOOKUP_FORCE_SVG);
+
+  GdkPixbuf *pixbuf = gtk_icon_info_load_icon (info, NULL);
+
+  drag_surface = gdk_cairo_surface_create_from_pixbuf (pixbuf,
+                                                       gtk_widget_get_scale_factor (GTK_WIDGET (widget)),
+                                                       gtk_widget_get_window (GTK_WIDGET (widget)));
+  gtk_render_icon_surface (context, cr, drag_surface, priv->icon_size / 2, 0);
+
+  if (info != NULL) {
+    g_object_unref (info);
+  }
+
+  if (pixbuf != NULL) {
+      g_object_unref (pixbuf);
+  }
+
+  cairo_surface_destroy (drag_surface);
+
+  //Text
+  GString *str;
+  const gchar *text;
+  PangoLayout *text_layout;
+  PangoContext *pcontext;
+
+  pcontext = gtk_widget_create_pango_context (GTK_WIDGET(priv->label));
+
+  text_layout = pango_layout_new (pcontext);
+
+  text = gtk_label_get_text (priv->label);
+
+  pango_layout_set_text (text_layout, text, -1);
+  pango_layout_set_auto_dir (text_layout, TRUE);
+
+  pango_cairo_update_layout (cr, text_layout);
+
+  pango_layout_set_alignment (text_layout, PANGO_ALIGN_CENTER);
+  pango_layout_set_spacing (text_layout, 0);
+  pango_layout_set_wrap (text_layout, PANGO_WRAP_WORD_CHAR);
+
+  PangoFontDescription *desc;
+  desc = pango_font_description_copy (pango_context_get_font_description (pcontext));
+  pango_layout_set_font_description (text_layout, desc);
+  pango_font_description_free (desc);
+
+  pango_layout_set_width (text_layout, (priv->icon_size * 2 ) * PANGO_SCALE);
+  pango_layout_set_height (text_layout, 2);
+
+  gtk_render_layout (context, cr, 0, 60, text_layout);
+
+  if (text_layout != NULL) {
+    g_object_unref (text_layout);
+  }
+
+  cairo_destroy (cr);
+  gtk_style_context_restore (context);
+  return surface;
 }

@@ -104,6 +104,9 @@ struct _ApplauncherWindowPrivate
 	guint idle_directory_changed_id;
 
 	GdkDevice *grab_pointer;
+
+	gboolean *draging;
+	gboolean *drag_copied;
 };
 
 enum {
@@ -241,6 +244,10 @@ get_all_applications_from_dir (GMenuTreeDirectory  *directory,
 {
 	GMenuTreeIter *iter;
 	GMenuTreeItemType next_type;
+
+	if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (directory), "chrome-apps.directory")) {
+		return list;
+	}
 
 	iter = gmenu_tree_directory_iter (directory);
 
@@ -475,7 +482,7 @@ update_grid (ApplauncherWindow *window)
 				ApplauncherAppItem *item = g_list_nth_data (priv->grid_children, pos);
 				if (item) {
 					gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
-					applauncher_appitem_change_app (item, NULL, NULL, NULL);
+					applauncher_appitem_change_app (item, NULL, NULL, NULL, NULL);
 				}
 			}
 		}
@@ -512,18 +519,19 @@ update_grid (ApplauncherWindow *window)
 				GIcon *icon = g_app_info_get_icon (app_info);
 				const gchar *name = g_app_info_get_name (app_info);
 				const gchar *desc = g_app_info_get_description (app_info);
+				const gchar *path = g_desktop_app_info_get_filename (app_info);
 
 				gtk_widget_set_sensitive (GTK_WIDGET (item), TRUE);
 				if (desc == NULL || g_strcmp0 (desc, "") == 0) {
-					applauncher_appitem_change_app (item, icon, name, name);
+					applauncher_appitem_change_app (item, icon, name, name, path);
 				} else {
 					gchar *tooltip = g_strdup_printf ("%s:\n%s", name, desc);
-					applauncher_appitem_change_app (item, icon, name, tooltip);
+					applauncher_appitem_change_app (item, icon, name, tooltip, path);
 					g_free (tooltip);
 				}
 			} else { // fill with a blank one
 				gtk_widget_set_sensitive (GTK_WIDGET (item), FALSE);
-				applauncher_appitem_change_app (item, NULL, NULL, NULL);
+				applauncher_appitem_change_app (item, NULL, NULL, NULL, NULL);
 			}
 
 			item_iter++;
@@ -868,9 +876,10 @@ get_max_size_of_appitem (ApplauncherWindow *window)
 			if (app_info) {
 				GIcon *icon = g_app_info_get_icon (app_info);
 				const gchar *name = g_app_info_get_name (app_info);
+				const gchar *path = g_desktop_app_info_get_filename (app_info);
 
 				ApplauncherAppItem *item = applauncher_appitem_new (window->priv->icon_size);
-				applauncher_appitem_change_app (item, icon, name, NULL);
+				applauncher_appitem_change_app (item, icon, name, NULL, path);
 				gtk_widget_show (GTK_WIDGET (item));
 
 				gtk_grid_attach (GTK_GRID (window->priv->grid), GTK_WIDGET (item), 0, 0, 1, 1);
@@ -901,6 +910,9 @@ populate_dirs (ApplauncherWindow *window)
 
 		GIcon *icon;
 		const char *name;
+		if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (dir), "chrome-apps.directory"))
+			continue;
+
 		if (gmenu_tree_directory_get_desktop_file_path (dir) != NULL) {
 			icon = gmenu_tree_directory_get_icon (dir);
 			name = gmenu_tree_directory_get_name (dir);
@@ -1015,6 +1027,81 @@ get_rows_and_columns (ApplauncherWindow *window,
 	gtk_widget_set_size_request (priv->grid, 0, 0);
 }
 
+enum {
+  TARGET_GNOME_URI_LIST,
+};
+
+static const GtkTargetEntry target_table[] = {
+  { (char *)"x-special/gnome-icon-list",  0, TARGET_GNOME_URI_LIST },
+};
+
+static void
+drag_begin (GtkWidget      *widget,
+            GdkDragContext *context,
+            gpointer        data)
+{
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherWindowPrivate *priv = window->priv;
+	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
+
+	cairo_surface_t *surface = applauncher_appitem_get_drag_surface (item);
+	cairo_surface_set_device_offset (surface, -DEFAULT_ICON_SIZE, -DEFAULT_ICON_SIZE);
+	gtk_drag_set_icon_surface (context, surface);
+	cairo_surface_destroy (surface);
+
+	priv->draging = TRUE;
+
+	gtk_widget_set_sensitive (GTK_BUTTON (widget), FALSE);
+}
+
+static void
+drag_data_get (GtkWidget *widget,
+               GdkDragContext *context,
+               GtkSelectionData *selection_data,
+               guint info,
+               guint32 time,
+               gpointer data)
+{
+
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	const gchar *path;
+	path = applauncher_appitem_get_path (item);
+
+	GString *result;
+	result = g_string_new (NULL);
+
+	g_string_append_printf (result, "file://%s\r%d:%d:%hu:%hu\r\n",
+                          path, 0, 0, DEFAULT_ICON_SIZE, DEFAULT_ICON_SIZE);
+
+	gtk_selection_data_set (selection_data,
+                          gtk_selection_data_get_target (selection_data),
+                          8, (guchar *) result->str, result->len);
+	g_string_free (result, TRUE);
+
+	priv->drag_copied = TRUE;
+}
+
+static void
+drag_end (GtkWidget        *widget,
+          GdkDragContext   *context,
+          gpointer         data)
+{
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	if (priv->drag_copied) {
+		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
+		priv->drag_copied = FALSE;
+		priv->draging = FALSE;
+	}
+
+	gtk_widget_set_sensitive (GTK_BUTTON (widget), TRUE);
+}
+
+
 static void
 populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
 {
@@ -1027,6 +1114,9 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
 		GtkWidget *item = GTK_WIDGET (l->data);
 		if (item) {
 			g_signal_handlers_disconnect_by_func (item, on_appitem_button_clicked_cb, window);
+			g_signal_handlers_disconnect_by_func (item, drag_begin, window);
+			g_signal_handlers_disconnect_by_func (item, drag_data_get, window);
+			g_signal_handlers_disconnect_by_func (item, drag_end, window);
 			gtk_widget_destroy (GTK_WIDGET (item));
 			item = NULL;
 		}
@@ -1056,6 +1146,14 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
 			priv->grid_children = g_list_append (priv->grid_children, item);
 
 			g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (on_appitem_button_clicked_cb), window);
+
+			//Drag & Drop
+			gtk_drag_source_set (GTK_WIDGET(item), GDK_BUTTON1_MASK,
+                           target_table, G_N_ELEMENTS (target_table), GDK_ACTION_COPY);
+
+			g_signal_connect (GTK_WIDGET(item), "drag_begin", G_CALLBACK (drag_begin), window);
+			g_signal_connect (GTK_WIDGET(item), "drag_data_get", G_CALLBACK (drag_data_get), window);
+			g_signal_connect (GTK_WIDGET(item), "drag_end", G_CALLBACK (drag_end), window);
 		}
 	}
 }
@@ -1224,7 +1322,15 @@ applauncher_window_focus_out_event (GtkWidget     *widget,
 
 	ungrab_pointer (window);
 
-	g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
+	if (!priv->draging)
+	{
+		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
+	}
+	else
+	{
+		grab_pointer (window);
+		priv->draging = FALSE;
+	}
 
 	return GTK_WIDGET_CLASS (applauncher_window_parent_class)->focus_out_event (widget, event);
 }
@@ -1251,6 +1357,8 @@ applauncher_window_init (ApplauncherWindow *window)
 	priv->grid_y = DEFAULT_GRID_Y;
 	priv->icon_size = DEFAULT_ICON_SIZE;
 	priv->grab_pointer = NULL;
+	priv->draging = FALSE;
+	priv->drag_copied = FALSE;
 
 	GdkMonitor *m = gdk_display_get_primary_monitor (gdk_display_get_default ());
 	gdk_monitor_get_geometry (m, &priv->workarea);
