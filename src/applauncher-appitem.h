@@ -59,7 +59,7 @@ void                applauncher_appitem_change_app (ApplauncherAppItem *item,
                                                     const gchar        *tooltip,
                                                     const gchar        *path);
 
-cairo_surface_t    *applauncher_appitem_get_drag_surface (ApplauncherAppItem *item);
+//cairo_surface_t    *applauncher_appitem_get_drag_surface (ApplauncherAppItem *item);
 const gchar        *applauncher_appitem_get_path (ApplauncherAppItem *item);
 
 

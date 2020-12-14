@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gooroom-applauncher-applet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-07 14:59+0900\n"
+"POT-Creation-Date: 2020-12-14 15:48+0900\n"
 "PO-Revision-Date: 2018-12-28 01:53+0900\n"
 "Language-Team: gooroom <gooroom@gooroom.kr>\n"
 "Language: en\n"
@@ -34,7 +34,7 @@ msgstr ""
 msgid "Failed to launch application"
 msgstr "Failed to launch application"
 
-#: ../src/applauncher-window.c:909
+#: ../src/applauncher-window.c:929
 msgid "All Programs"
 msgstr "All Programs"
 
