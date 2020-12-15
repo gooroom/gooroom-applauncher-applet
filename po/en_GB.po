@@ -42,10 +42,8 @@ msgstr "All Programs"
 msgid "Type to search…"
 msgstr "Type to search…"
 
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:1
 msgid "Gooroom Applauncher Applet"
 msgstr "Gooroom Applauncher Applet"
 
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:2
 msgid "Application launcher applet for GNOME panel"
 msgstr "Application launcher applet for GNOME panel"

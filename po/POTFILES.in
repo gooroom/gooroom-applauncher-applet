@@ -8,4 +8,3 @@ src/applauncher-window.c
 [type: gettext/glade]src/appitem.ui
 [type: gettext/glade]src/indicator.ui
 [type: gettext/glade]src/directory-item.ui
-[type: gettext/ini]data/kr.gooroom.ApplauncherApplet.panel-applet.in.in

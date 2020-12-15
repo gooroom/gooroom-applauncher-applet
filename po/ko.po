@@ -40,10 +40,8 @@ msgstr "모든 프로그램"
 msgid "Type to search…"
 msgstr "검색하려면 입력하십시오…"
 
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:1
 msgid "Gooroom Applauncher Applet"
 msgstr "구름 앱런처 애플릿"
 
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:2
 msgid "Application launcher applet for GNOME panel"
 msgstr "GNOME 패널용 어플리케이션 실행 애플릿"
