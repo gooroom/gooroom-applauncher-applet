@@ -69,6 +69,7 @@ static gboolean on_directory_item_leave_notify_event_cb (GtkWidget     *widget,
 static GSList *get_all_applications_from_dir (GMenuTreeDirectory  *directory,
                                               GSList              *list);
 
+static gint applications_compare_by_id (GMenuTreeEntry *a, GMenuTreeEntry *b);
 
 struct _ApplauncherWindowPrivate
 {
@@ -256,12 +257,6 @@ get_all_applications_from_dir (GMenuTreeDirectory  *directory,
 	GMenuTreeIter *iter;
 	GMenuTreeItemType next_type;
 
-	if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (directory),
-                          "chrome-apps.directory"))
-	{
-		return list;
-	}
-
 	iter = gmenu_tree_directory_iter (directory);
 
 	while ((next_type = gmenu_tree_iter_next (iter)) != GMENU_TREE_ITEM_INVALID) {
@@ -273,6 +268,11 @@ get_all_applications_from_dir (GMenuTreeDirectory  *directory,
 
 			case GMENU_TREE_ITEM_DIRECTORY: {
 				GMenuTreeDirectory *dir = gmenu_tree_iter_get_directory (iter);
+				if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (dir),
+                                      "chrome-apps.directory")) {
+					gmenu_tree_item_unref (dir);
+					break;
+	            }
 				list = get_all_applications_from_dir (dir, list);
 				gmenu_tree_item_unref (dir);
 				break;
@@ -292,7 +292,7 @@ get_all_applications_from_dir (GMenuTreeDirectory  *directory,
 
 	gmenu_tree_iter_unref (iter);
 
-	return list;
+	return g_slist_sort (list, (GCompareFunc)applications_compare_by_id);
 }
 
 static GSList *
@@ -317,8 +317,8 @@ get_all_directories (void)
 
 	list = g_slist_append (list, root);
 
-    GMenuTreeIter *iter;
-    GMenuTreeItemType next_type;
+	GMenuTreeIter *iter;
+	GMenuTreeItemType next_type;
 
 	iter = gmenu_tree_directory_iter (root);
 
@@ -326,6 +326,9 @@ get_all_directories (void)
 		switch (next_type) {
 			case GMENU_TREE_ITEM_DIRECTORY:
 			{
+				if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (gmenu_tree_iter_get_directory(iter)), "chrome-apps.directory")) {
+					break;
+				}
 				list = g_slist_append (list, gmenu_tree_iter_get_directory (iter));
 				break;
 			}
@@ -368,6 +371,32 @@ get_all_applications (void)
 	g_object_unref (tree);
 
 	return list;
+}
+
+static gint
+applications_compare_by_id (GMenuTreeEntry *a, GMenuTreeEntry *b)
+{
+	GAppInfo *app_a = NULL;
+	GAppInfo *app_b = NULL;
+	const gchar *id_a = NULL;
+	const gchar *id_b = NULL;
+
+	app_a = G_APP_INFO (gmenu_tree_entry_get_app_info (a));
+	app_b = G_APP_INFO (gmenu_tree_entry_get_app_info (b));
+
+	if (app_a)
+		id_a = g_app_info_get_id ((GAppInfo *)app_a);
+	if (app_b)
+		id_b = g_app_info_get_id ((GAppInfo *)app_b);
+
+	if (id_a == NULL && id_b == NULL)
+		return 0;
+	if (id_a == NULL)
+		return -1;
+	if (id_b == NULL)
+		return 1;
+
+	return strcmp (id_a, id_b);
 }
 
 static void
@@ -929,6 +958,7 @@ populate_dirs (ApplauncherWindow *window)
 
 		GIcon *icon;
 		const char *name;
+
 		if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (dir), "chrome-apps.directory"))
 			continue;
 
