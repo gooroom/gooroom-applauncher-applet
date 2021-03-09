@@ -6,6 +6,7 @@ libgooroom_applauncher_applet_la_CPPFLAGS =	\
 	-I$(top_srcdir) \
 	-DGNOMELOCALEDIR=\""$(localedir)"\" \
 	-DPKGDATADIR=\"$(pkgdatadir)\" \
+	-DDUMMY_DESKTOP=\"$(pkgdatadir)/dummy.desktop\" \
 	-DGMENU_I_KNOW_THIS_IS_UNSTABLE \
 	-DGDK_DISABLE_DEPRECATED \
 	-DSN_API_NOT_YET_FROZEN

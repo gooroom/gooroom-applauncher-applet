@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=dummy
+Exec=/bin/ls
+Icon=application-other

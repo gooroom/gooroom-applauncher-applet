@@ -912,12 +912,49 @@ on_directory_item_toggled_cb (GtkToggleButton *button,
 }
 
 static gint
+get_default_size_of_appitem (ApplauncherWindow *window)
+{
+	gint max_item_size = 0;
+
+	GDesktopAppInfo *dt_info = g_desktop_app_info_new_from_filename (DUMMY_DESKTOP);
+
+	if (dt_info) {
+		GIcon *icon = g_app_info_get_icon (G_APP_INFO (dt_info));
+		const gchar *name = g_app_info_get_name (G_APP_INFO (dt_info));
+		const gchar *desktop_id = g_desktop_app_info_get_filename (dt_info);
+
+		ApplauncherAppItem *item = applauncher_appitem_new (window->priv->icon_size);
+		applauncher_appitem_change_app (item, icon, name, NULL, desktop_id);
+		gtk_widget_show (GTK_WIDGET (item));
+
+		gtk_grid_attach (GTK_GRID (window->priv->grid), GTK_WIDGET (item), 0, 0, 1, 1);
+
+		gint max = 0, pref_w = 0, pref_h = 0;
+		gtk_widget_get_preferred_width (GTK_WIDGET (item), NULL, &pref_w);
+		gtk_widget_get_preferred_height (GTK_WIDGET (item), NULL, &pref_h);
+
+		max = (pref_w > pref_h) ? pref_w : pref_h;
+		max_item_size = (max_item_size > max) ? max_item_size: max;
+
+		gtk_widget_destroy (GTK_WIDGET (item));
+	}
+
+	return max_item_size;
+}
+
+static gint
 get_max_size_of_appitem (ApplauncherWindow *window)
 {
 	GSList *l = NULL;
 	gint max_item_size = 0, item_width = 0, item_height = 0;
 
-	for (l = window->priv->apps; l; l = l->next) {
+	l = window->priv->apps;
+
+	if (!l) {
+		max_item_size = get_default_size_of_appitem (window);
+	}
+
+	for (l; l; l = l->next) {
 		GMenuTreeEntry *entry = (GMenuTreeEntry *)l->data;
 		if (entry) {
 			GDesktopAppInfo *dt_info = gmenu_tree_entry_get_app_info (entry);

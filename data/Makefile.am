@@ -2,6 +2,9 @@ appletdir       = $(LIBPANEL_APPLET_DIR)
 applet_in_files = kr.gooroom.ApplauncherApplet.panel-applet.in
 applet_DATA     = $(applet_in_files:.panel-applet.in=.panel-applet)
 
+dummydesktopdir   = $(pkgdatadir)
+dummydesktop_DATA = dummy.desktop
+
 APPLET_LOCATION=$(pkglibdir)/libgooroom-applauncher-applet.so
 
 $(applet_in_files): $(applet_in_files).in Makefile
