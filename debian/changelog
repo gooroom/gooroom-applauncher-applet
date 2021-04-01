@@ -1,3 +1,19 @@
+gooroom-applauncher-applet (0.3.6+grm2u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [6712e141] desktop 파일에 실행파일에 띄어쓰기가 존재할 경우 예외처리
+               drag 종료시 snapback 효과 비활성화(snapback 버그로 인함)
+
+  [ donghun ]
+  * [f66d9b7b] Fixed the Chrome app deactivation error and added the app sorting function
+
+  [ subin.kim ]
+  * [46550684] [Bug:3283] Got default appitem size
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Thu, 01 Apr 2021 09:37:09 +0900
+
 gooroom-applauncher-applet (0.3.5+grm2u1) unstable; urgency=medium
 
   [ donghun ]
