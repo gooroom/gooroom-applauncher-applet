@@ -710,15 +710,7 @@ search_entry_changed_idle_destroyed (gpointer data)
 static gboolean
 search_entry_changed_idle (gpointer data)
 {
-	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
-	ApplauncherWindowPrivate *priv = window->priv;
-
-	const gchar *text = g_strdup (gtk_entry_get_text (GTK_ENTRY (priv->ent_search)));
-
-	g_free (priv->filter_text);
-	priv->filter_text = (text == NULL) ? g_strdup ("") : g_strdup (text);
-
-	do_search (window);
+	do_search (APPLAUNCHER_WINDOW (data));
 
 	return FALSE;
 }
@@ -726,12 +718,44 @@ search_entry_changed_idle (gpointer data)
 static void
 on_search_entry_changed_cb (ApplauncherWindow *window)
 {
+	const gchar *text;
 	ApplauncherWindowPrivate *priv = window->priv;
 
 	if (priv->idle_entry_changed_id != 0) {
 		g_source_remove (priv->idle_entry_changed_id);
 		priv->idle_entry_changed_id = 0;
 	}
+
+	text = gtk_entry_get_text (GTK_ENTRY (priv->ent_search));
+
+	g_clear_pointer (&priv->filter_text, g_free);
+	priv->filter_text = (text == NULL) ? g_strdup ("") : g_strdup (text);
+
+	priv->idle_entry_changed_id =
+		gdk_threads_add_idle_full (G_PRIORITY_DEFAULT,
+                                   search_entry_changed_idle,
+                                   window,
+                                   search_entry_changed_idle_destroyed);
+}
+
+static void
+on_search_entry_preedit_changed_cb (GtkEntry *entry,
+                                    gchar    *preedit,
+                                    gpointer  data)
+{
+	const gchar *text;
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	if (priv->idle_entry_changed_id != 0) {
+		g_source_remove (priv->idle_entry_changed_id);
+		priv->idle_entry_changed_id = 0;
+	}
+
+	text = gtk_entry_get_text (entry);
+
+	g_clear_pointer (&priv->filter_text, g_free);
+	priv->filter_text = preedit ? g_strdup_printf ("%s%s", text, preedit) : g_strdup (text);
 
 	priv->idle_entry_changed_id =
 		gdk_threads_add_idle_full (G_PRIORITY_DEFAULT,
@@ -1531,6 +1555,9 @@ applauncher_window_init (ApplauncherWindow *window)
 	g_signal_connect_swapped (G_OBJECT (priv->ent_search), "changed",
                               G_CALLBACK (on_search_entry_changed_cb), window);
 
+	g_signal_connect (G_OBJECT (priv->ent_search), "preedit-changed",
+                      G_CALLBACK (on_search_entry_preedit_changed_cb), window);
+
 	g_signal_connect (G_OBJECT (priv->ent_search), "icon-release",
                       G_CALLBACK (on_search_entry_icon_release_cb), window);
 
@@ -1572,6 +1599,8 @@ applauncher_window_finalize (GObject *object)
 		g_source_remove (priv->idle_directory_changed_id);
 		priv->idle_directory_changed_id = 0;
 	}
+
+	g_clear_pointer (&priv->filter_text, g_free);
 
 	G_OBJECT_CLASS (applauncher_window_parent_class)->finalize (object);
 }
