@@ -1,3 +1,12 @@
+gooroom-applauncher-applet (0.3.7+grm2u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [5ea00366] 한글검색 버그 수정
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 09 Apr 2021 11:21:04 +0900
+
 gooroom-applauncher-applet (0.3.6+grm2u1) unstable; urgency=medium
 
   [ cjheo ]
