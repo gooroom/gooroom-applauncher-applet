@@ -1,7 +1,7 @@
 /*
  *  Copyright (c) 2009 Brian Tarricone <brian@terricone.org>
  *  Copyright (C) 1999 Olivier Fourdan <fourdan@xfce.org>
- *  Copyright (C) 2018-2019 Gooroom <gooroom@gooroom.kr>
+ *  Copyright (C) 2018-2021 Gooroom <gooroom@gooroom.kr>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -122,17 +122,17 @@ static gboolean
 xfce_spawn_startup_timeout (gpointer user_data)
 {
   XfceSpawnData *spawn_data = user_data;
-  GTimeVal       now;
   gdouble        elapsed;
   glong          tv_sec;
   glong          tv_usec;
+  gint64         ct;
 
   g_return_val_if_fail (spawn_data->sn_launcher != NULL, FALSE);
 
   /* determine the amount of elapsed time */
-  g_get_current_time (&now);
+  ct = g_get_real_time ();
   sn_launcher_context_get_last_active_time (spawn_data->sn_launcher, &tv_sec, &tv_usec);
-  elapsed = now.tv_sec - tv_sec + ((gdouble) (now.tv_usec - tv_usec) / G_USEC_PER_SEC);
+  elapsed = tv_sec - (ct / G_USEC_PER_SEC) + ((gdouble) (ct - tv_usec) / G_USEC_PER_SEC);
 
   return elapsed < XFCE_SPAWN_STARTUP_TIMEOUT;
 }
@@ -225,6 +225,7 @@ xfce_spawn_startup_watch_destroy (gpointer user_data)
 static gint
 xfce_spawn_get_active_workspace_number (GdkScreen *screen)
 {
+  GdkDisplay *display;
   GdkWindow *root;
   gulong     bytes_after_ret = 0;
   gulong     nitems_ret = 0;
@@ -235,7 +236,9 @@ xfce_spawn_get_active_workspace_number (GdkScreen *screen)
   gint       format_ret;
   gint       ws_num = 0;
 
-  gdk_error_trap_push ();
+  display = gdk_screen_get_display (screen);
+
+  gdk_x11_display_error_trap_push (display);
 
   root = gdk_screen_get_root_window (screen);
 
@@ -270,7 +273,7 @@ xfce_spawn_get_active_workspace_number (GdkScreen *screen)
       XFree (prop_ret);
     }
 
-  gdk_error_trap_pop_ignored ();
+  gdk_x11_display_error_trap_pop_ignored (display);
 
   return ws_num;
 }
@@ -327,10 +330,9 @@ xfce_spawn_on_screen_with_child_watch (GdkScreen    *screen,
   /* initialize the sn launcher context */
   if (G_LIKELY (startup_notify))
     {
-      sn_display = sn_display_new (GDK_SCREEN_XDISPLAY (screen),
-                                   (SnDisplayErrorTrapPush) (void (*)(void)) gdk_error_trap_push,
-                                   (SnDisplayErrorTrapPop) (void (*)(void)) gdk_error_trap_pop);
+      GdkDisplay *display = gdk_screen_get_display (screen);
 
+      sn_display = sn_display_new (GDK_SCREEN_XDISPLAY (screen), NULL, NULL);
       if (G_LIKELY (sn_display != NULL))
         {
           sn_launcher = sn_launcher_context_new (sn_display, GDK_SCREEN_XNUMBER (screen));
@@ -371,8 +373,8 @@ xfce_spawn_on_screen_with_child_watch (GdkScreen    *screen,
   else if (!g_file_test (working_directory, G_FILE_TEST_IS_DIR))
     {
       /* print warning for user */
-      g_printerr (_("Working directory \"%s\" does not exist. It won't be used "
-                    "when spawning \"%s\"."), working_directory, *argv);
+      g_printerr ("Working directory \"%s\" does not exist. It won't be used "
+                  "when spawning \"%s\".", working_directory, *argv);
       working_directory = NULL;
     }
 
@@ -821,6 +823,7 @@ gooroom_applauncher_applet_constructed (GObject *object)
 static void
 gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 {
+	GtkWidget *icon;
 	GdkDisplay *display;
 	GooroomApplauncherAppletPrivate *priv;
 
@@ -837,10 +840,9 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 
 	priv->button = gtk_toggle_button_new ();
 	gtk_button_set_relief (GTK_BUTTON (priv->button), GTK_RELIEF_NONE);
-	gtk_widget_set_name (GTK_WIDGET (priv->button), "applauncher-button");
 	gtk_container_add (GTK_CONTAINER (applet), priv->button);
 
-	GtkWidget *icon = gtk_image_new_from_icon_name ("start-here-symbolic", GTK_ICON_SIZE_BUTTON);
+	icon = gtk_image_new_from_icon_name ("gooroom-applauncher-applet", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_image_set_pixel_size (GTK_IMAGE (icon), TRAY_ICON_SIZE);
 	gtk_container_add (GTK_CONTAINER (priv->button), icon);
 
@@ -849,6 +851,14 @@ gooroom_applauncher_applet_init (GooroomApplauncherApplet *applet)
 
 	g_signal_connect (gdk_display_get_default_screen (display), "monitors-changed",
                       G_CALLBACK (monitors_changed_cb), applet);
+
+	GtkCssProvider *provider;
+	provider = gtk_css_provider_new ();
+	gtk_css_provider_load_from_resource (provider, "/kr/gooroom/applauncher/data/style.css");
+    gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                               GTK_STYLE_PROVIDER (provider),
+                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref (provider);
 }
 
 static void

@@ -2,7 +2,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Source: https://github.com/gooroom/gooroom-applauncher-applet/
 
 Files: *
-Copyright: 2018-2019 Gooroom <gooroom@gooroom.kr>
+Copyright: 2018-2021 Gooroom <gooroom@gooroom.kr>
 License: GPL-2+
 
 Files: src/applauncher-applet.c
@@ -10,7 +10,7 @@ Files: src/applauncher-applet.c
 Copyright: 2009      Brian Tarricone <brian@terricone.org>
            1999      Olivier Fourdan <fourdan@xfce.org>
            2003      Frank Worsley <fworsley@shaw.ca>
-           2018-2019 Gooroom <gooroom@gooroom.kr>
+           2018-2021 Gooroom <gooroom@gooroom.kr>
 License: GPL-2+
 
 Files: src/panel-glib.*

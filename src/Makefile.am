@@ -24,9 +24,9 @@ libgooroom_applauncher_applet_la_SOURCES = \
 	applauncher-directory-item.c   \
 	applauncher-indicator.h \
 	applauncher-indicator.c \
+	applauncher-applet-module.c	\
 	applauncher-applet.h	\
 	applauncher-applet.c	\
-	applauncher-module.c	\
 	applauncher-window.h	\
 	applauncher-window.c
 

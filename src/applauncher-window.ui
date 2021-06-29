@@ -3,9 +3,9 @@
 <interface domain="gooroom-applauncher-applet">
   <requires lib="gtk+" version="3.20"/>
   <template class="ApplauncherWindow" parent="GtkWindow">
-    <property name="name">GooroomApplauncherWindow</property>
+    <property name="name">ApplauncherWindow</property>
     <property name="can_focus">False</property>
-    <property name="border_width">8</property>
+    <property name="border_width">10</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="type_hint">popup-menu</property>
@@ -20,6 +20,7 @@
     </child>
     <child>
       <object class="GtkBox" id="box_content">
+        <property name="name">box_content</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">10</property>
@@ -31,13 +32,10 @@
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox" id="inner_box_diritem">
+                <property name="name">inner_box_diritem</property>
                 <property name="width_request">224</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">20</property>
-                <property name="margin_right">20</property>
-                <property name="margin_top">40</property>
-                <property name="margin_bottom">20</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">20</property>
                 <child>
@@ -45,8 +43,8 @@
                     <property name="name">search-entry</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="margin_left">10</property>
-                    <property name="margin_right">10</property>
+                    <property name="width_chars">0</property>
+                    <property name="xalign">0.05000000074505806</property>
                     <property name="primary_icon_name">edit-find-symbolic</property>
                     <property name="secondary_icon_name">edit-clear-symbolic</property>
                     <property name="placeholder_text" translatable="yes">Type to search…</property>
@@ -58,7 +56,8 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow">
+                  <object class="GtkScrolledWindow" id="scrolled_window">
+                    <property name="name">scrolled_window</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hscrollbar_policy">never</property>
@@ -68,6 +67,7 @@
                         <property name="can_focus">False</property>
                         <child>
                           <object class="GtkBox" id="lbx_dirs">
+                            <property name="name">lbx_dirs</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="valign">start</property>
@@ -100,6 +100,9 @@
                 <property name="position">0</property>
               </packing>
             </child>
+            <style>
+              <class name="left_box_toplevel"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -108,7 +111,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="app-item-box">
             <property name="name">app-item-box</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -119,17 +122,17 @@
                 <property name="can_focus">False</property>
                 <child>
                   <object class="GtkBox" id="inner_box_appitem">
+                    <property name="name">inner_box_appitem</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">20</property>
-                    <property name="margin_right">20</property>
-                    <property name="margin_top">40</property>
-                    <property name="margin_bottom">40</property>
-                    <property name="spacing">20</property>
                     <child>
                       <object class="GtkGrid" id="grid">
+                        <property name="name">grid</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="margin_left">30</property>
+                        <property name="margin_top">40</property>
+                        <property name="margin_bottom">40</property>
                         <property name="row_spacing">30</property>
                         <property name="column_spacing">10</property>
                         <child>
@@ -168,12 +171,14 @@
                     </child>
                     <child>
                       <object class="GtkStack" id="stk_bottom">
+                        <property name="name">stk_bottom</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="valign">center</property>
                         <property name="transition_duration">0</property>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="label_app_name">
+                            <property name="name">label_app_name</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -188,6 +193,9 @@
                         <property name="position">1</property>
                       </packing>
                     </child>
+                    <style>
+                      <class name="inner"/>
+                    </style>
                   </object>
                 </child>
               </object>
@@ -206,5 +214,8 @@
         </child>
       </object>
     </child>
+    <style>
+      <class name="applauncher-window"/>
+    </style>
   </template>
 </interface>
