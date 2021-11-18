@@ -617,26 +617,21 @@ set_popup_window_position (GooroomApplauncherApplet *applet)
 		case GTK_ORIENTATION_HORIZONTAL:
 			if (x + popup_width > geometry.x + geometry.width)
 				x -= ((x + popup_width) - (geometry.x + geometry.width));
-			y += applet_height;
-
-			if (x + popup_width > geometry.x + geometry.width)
-				x -= ((x + popup_width) - (geometry.x + geometry.width));
+			//y += applet_height;
 			y -= popup_height;
 		break;
 
 		case GTK_ORIENTATION_VERTICAL:
-			x += applet_width;
 			if (y + popup_height > geometry.y + geometry.height)
 				y -= ((y + popup_height) - (geometry.y + geometry.height));
-
+			//x += applet_width;
 			x -= popup_width;
-			if (y + popup_height > geometry.y + geometry.height)
-				y -= ((y + popup_height) - (geometry.y + geometry.height));
 		break;
 
 		default:
 			g_assert_not_reached ();
 	}
+
 #if 0
 	switch (orientation) {
 		case PANEL_APPLET_ORIENT_DOWN:
