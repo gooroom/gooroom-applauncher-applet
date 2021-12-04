@@ -1,3 +1,14 @@
+gooroom-applauncher-applet (0.4.0+grm3u1) unstable; urgency=medium
+
+  [ subin.kim ]
+  * [3e10426c] porting to gooroom-3.0
+  * [7fefdeb5] removed panel-applet related files
+  * [9103516c] Modified UI for gooroom-3.0
+  * [890442a2] Moved up the popup window when auto-hide is on
+  * [61bd70a8] Added preedit signal for searching preediting word
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Sat, 04 Dec 2021 19:34:31 +0900
+
 gooroom-applauncher-applet (0.3.4+grm2u1) unstable; urgency=medium
 
   [ cjheo ]
