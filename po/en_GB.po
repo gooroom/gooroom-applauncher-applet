@@ -1,5 +1,5 @@
 # English(USA) translations for gooroom-applauncher-applet package.
-# Copyright (C) 2018-2019 THE gooroom-applauncher-applet'S COPYRIGHT HOLDER
+# Copyright (C) 2018-2021 THE gooroom-applauncher-applet'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the gooroom-applauncher-applet package.
 #
 #, fuzzy
@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gooroom-applauncher-applet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-10 19:22+0900\n"
+"POT-Creation-Date: 2021-07-08 12:00+0900\n"
 "PO-Revision-Date: 2018-12-28 01:53+0900\n"
 "Language-Team: gooroom <gooroom@gooroom.kr>\n"
 "Language: en\n"
@@ -16,21 +16,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+#: ../src/applauncher-applet-module.c:35
+msgid "Gooroom Applauncher Applet"
+msgstr "Gooroom Applauncher Applet"
+
+#: ../src/applauncher-applet-module.c:36
+msgid "Application launcher applet for GNOME panel"
+msgstr "Application launcher applet for GNOME panel"
+
 #: ../src/applauncher-applet.c:110
 msgid "Application Launching Error"
 msgstr "Application Launching Error"
 
-#. print warning for user
-#: ../src/applauncher-applet.c:374
-#, c-format
-msgid ""
-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
-"\"."
-msgstr ""
-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
-"\"."
-
-#: ../src/applauncher-applet.c:665
+#: ../src/applauncher-applet.c:683
 msgid "Failed to launch application"
 msgstr "Failed to launch application"
 
@@ -40,12 +38,4 @@ msgstr "All Programs"
 
 #: ../src/applauncher-window.ui.h:1
 msgid "Type to search…"
-msgstr "Type to search…"
-
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:1
-msgid "Gooroom Applauncher Applet"
-msgstr "Gooroom Applauncher Applet"
-
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:2
-msgid "Application launcher applet for GNOME panel"
-msgstr "Application launcher applet for GNOME panel"
+msgstr "Type to search"

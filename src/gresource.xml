@@ -6,4 +6,10 @@
     <file preprocess="xml-stripblanks">appitem.ui</file>
     <file preprocess="xml-stripblanks">directory-item.ui</file>
   </gresource>
+
+  <gresource prefix="/kr/gooroom/applauncher/data">
+	<file alias="gooroom-applauncher-applet">../data/gooroom-applauncher-applet.svg</file>
+	<file compressed="true" alias="style.css">../data/style.css</file>
+  </gresource>
 </gresources>
+

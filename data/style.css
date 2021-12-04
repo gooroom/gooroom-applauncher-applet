@@ -1,0 +1,147 @@
+* {
+  outline-color: transparent;
+  text-shadow: none;
+  -gtk-icon-effect: none;
+  -gtk-icon-shadow: none; }
+
+
+
+#GooroomApplauncherWindow {
+  padding: 5px;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.97);
+}
+
+#box_content {
+  padding: 5px;
+  border-radius: 16px;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.8);
+  color: #000100;
+  background-color: rgba(255, 255, 255, 0.97);
+}
+
+#directory-item-box {
+  padding: 10px 10px 64px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0);
+  color: #000100;
+}
+
+#search-entry {
+  border: solid 1px transparent;
+  border-radius: 10px;
+  color: #000100;
+  min-width: 215px;
+  min-height: 24px;
+  border-image: radial-gradient(circle farthest-corner at center, rgba(255, 255, 255, 0.5) 100%, transparent) 0 0 1/0 0 1px;
+  background-color: transparent;
+}
+
+#search-entry:focus {
+  border-radius: 10px;
+  border: solid 1px #3e6ddc;
+  min-width: 215px;
+  min-height: 24px;
+}
+
+#scrolled_window {
+  color: #000100;
+}
+
+#lbx_dirs:hover {
+  border-radius: 10px;
+  background-color: rgba(106, 159, 221, 0.3);
+}
+
+#directory-item {
+  min-width: 215px;
+  border: 1px solid transparent;
+  padding: 5px 10px;
+  color: #000100;
+  font-size: 105%;
+  font-weight: normal;
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#directory-item:hover {
+  min-width: 215px;
+  background-image: none;
+  border-radius: 10px;
+  background-color: rgba(106, 159, 221, 0.3); 
+}
+
+#directory-item:checked {
+  min-width: 215px;
+  border-radius: 10px;
+  background-color: rgba(90, 135, 188, 0.33);
+}
+
+#app-item-box {
+  background-color: rgba(255, 255, 255, 0);
+  color: #000100;
+}
+
+#inner_box_appitem {
+  padding: 5px;
+  border-radius: 12px;
+  box-shadow: inset 1px 1px 20px 0 rgba(0, 0, 0, 0.3);
+  background-color: rgba(5, 20, 49, 0.95);
+}
+
+#label_app_name {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  font-size: 13px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  color: #ffffff;
+}
+
+#appitem {
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 0;
+  color: #ffffff;
+  background-image: none;
+  background-color: transparent;
+}
+
+#appitem:hover {
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#appitem:focus {
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+#indicator-button {
+  border: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.3);
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#indicator-button:hover {
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+#indicator-button:checked {
+  border: none;
+  color: #50e3c2;
+  box-shadow: none;
+}
+
+#indicator-button:active{
+  border: none;
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+}

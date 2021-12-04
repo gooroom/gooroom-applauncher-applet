@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018-2019 Gooroom <gooroom@gooroom.kr>
+ *  Copyright (C) 2018-2021 Gooroom <gooroom@gooroom.kr>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -744,6 +744,31 @@ on_search_entry_preedit_changed_cb (GtkEntry *entry,
                                     gpointer  data)
 {
 	const gchar *text;
+	ApplauncherWindowPrivate *priv = window->priv;
+
+	if (priv->idle_entry_changed_id != 0) {
+		g_source_remove (priv->idle_entry_changed_id);
+		priv->idle_entry_changed_id = 0;
+	}
+
+	text = gtk_entry_get_text (GTK_ENTRY (priv->ent_search));
+
+	g_clear_pointer (&priv->filter_text, g_free);
+	priv->filter_text = (text == NULL) ? g_strdup ("") : g_strdup (text);
+
+	priv->idle_entry_changed_id =
+		gdk_threads_add_idle_full (G_PRIORITY_DEFAULT,
+                                   search_entry_changed_idle,
+                                   window,
+                                   search_entry_changed_idle_destroyed);
+}
+
+static void
+on_search_entry_preedit_changed_cb (GtkEntry *entry,
+                                    gchar    *preedit,
+                                    gpointer  data)
+{
+	const gchar *text;
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
 	ApplauncherWindowPrivate *priv = window->priv;
 
@@ -763,7 +788,6 @@ on_search_entry_preedit_changed_cb (GtkEntry *entry,
                                    window,
                                    search_entry_changed_idle_destroyed);
 }
-
 static gboolean
 search_entry_populate_popup_cb (GtkWidget *widget,
                                 gpointer   data)

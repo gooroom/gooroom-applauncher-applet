@@ -1,5 +1,5 @@
 # Korean translations for gooroom-applauncher-applet package.
-# Copyright (C) 2018-2019 THE gooroom-applauncher-applet'S COPYRIGHT HOLDER
+# Copyright (C) 2018-2021 THE gooroom-applauncher-applet'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the gooroom-applauncher-applet package.
 #
 #, fuzzy
@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gooroom-applauncher-applet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-10 19:22+0900\n"
+"POT-Creation-Date: 2021-07-08 12:00+0900\n"
 "PO-Revision-Date: 2018-12-28 01:53+0900\n"
 "Language-Team: Gooroom <gooroom@gooroom.kr>\n"
 "Language: ko\n"
@@ -16,19 +16,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+#: ../src/applauncher-applet-module.c:35
+msgid "Gooroom Applauncher Applet"
+msgstr "구름 앱런처 애플릿"
+
+#: ../src/applauncher-applet-module.c:36
+msgid "Application launcher applet for GNOME panel"
+msgstr "GNOME 패널용 어플리케이션 실행 애플릿"
+
 #: ../src/applauncher-applet.c:110
 msgid "Application Launching Error"
 msgstr "어플리케이션 실행 에러"
 
-#. print warning for user
-#: ../src/applauncher-applet.c:374
-#, c-format
-msgid ""
-"Working directory \"%s\" does not exist. It won't be used when spawning \"%s"
-"\"."
-msgstr ""
-
-#: ../src/applauncher-applet.c:665
+#: ../src/applauncher-applet.c:683
 msgid "Failed to launch application"
 msgstr "어플리케이션을 실행할 수 없습니다."
 
@@ -38,12 +38,4 @@ msgstr "모든 프로그램"
 
 #: ../src/applauncher-window.ui.h:1
 msgid "Type to search…"
-msgstr "검색하려면 입력하십시오…"
-
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:1
-msgid "Gooroom Applauncher Applet"
-msgstr "구름 앱런처 애플릿"
-
-#: ../data/kr.gooroom.ApplauncherApplet.panel-applet.in.in.h:2
-msgid "Application launcher applet for GNOME panel"
-msgstr "GNOME 패널용 어플리케이션 실행 애플릿"
+msgstr "검색어를 입력하세요"

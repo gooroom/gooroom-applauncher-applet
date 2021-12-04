@@ -1,5 +1,5 @@
 /* 
- *  Copyright (C) 2018-2019 Gooroom <gooroom@gooroom.kr>
+ *  Copyright (C) 2018-2021 Gooroom <gooroom@gooroom.kr>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 
 G_BEGIN_DECLS
 
-#include <panel-applet.h>
+#include <libgnome-panel/gp-applet.h>
 
 #define GOOROOM_TYPE_APPLAUNCHER_APPLET            (gooroom_applauncher_applet_get_type ())
 #define GOOROOM_APPLAUNCHER_APPLET(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GOOROOM_TYPE_APPLAUNCHER_APPLET, GooroomApplauncherApplet))
@@ -35,12 +35,12 @@ typedef struct _GooroomApplauncherAppletClass   GooroomApplauncherAppletClass;
 typedef struct _GooroomApplauncherAppletPrivate GooroomApplauncherAppletPrivate;
 
 struct _GooroomApplauncherApplet {
-    PanelApplet            parent;
+    GpApplet                         parent;
     GooroomApplauncherAppletPrivate *priv;
 };
 
 struct _GooroomApplauncherAppletClass {
-    PanelAppletClass parent_class;
+    GpAppletClass                    parent_class;
 };
 
 GType gooroom_applauncher_applet_get_type (void) G_GNUC_CONST;

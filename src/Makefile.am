@@ -1,4 +1,4 @@
-gooroomappletdir = $(pkglibdir)
+gooroomappletdir = $(GNOME_PANEL_MODULES_DIR)
 gooroomapplet_LTLIBRARIES = libgooroom-applauncher-applet.la
 
 libgooroom_applauncher_applet_la_CPPFLAGS =	\
@@ -25,6 +25,7 @@ libgooroom_applauncher_applet_la_SOURCES = \
 	applauncher-directory-item.c   \
 	applauncher-indicator.h \
 	applauncher-indicator.c \
+	applauncher-applet-module.c	\
 	applauncher-applet.h	\
 	applauncher-applet.c	\
 	applauncher-window.h	\
@@ -34,7 +35,7 @@ libgooroom_applauncher_applet_la_CFLAGS = \
 	$(GLIB_CFLAGS) \
 	$(GTK_CFLAGS) \
 	$(GNOME_MENU_CFLAGS)	\
-	$(GNOME_APPLETS_CFLAGS) \
+	$(LIBGNOMEPANEL_CFLAGS) \
 	$(STARTUP_NOTIFICATION_CFLAGS) \
 	$(AM_CFLAGS)
 
@@ -46,7 +47,7 @@ libgooroom_applauncher_applet_la_LIBADD = \
 	$(GLIB_LIBS) \
 	$(GTK_LIBS) \
 	$(GNOME_MENU_LIBS)	\
-	$(GNOME_APPLETS_LIBS) \
+	$(LIBGNOMEPANEL_LIBS) \
 	$(STARTUP_NOTIFICATION_LIBS)
 
 resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/gresource.xml)

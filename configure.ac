@@ -49,19 +49,12 @@ GLIB_GSETTINGS
 
 PKG_CHECK_MODULES(GTK, gtk+-3.0 >= 3.20.0)
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.44.0)
-PKG_CHECK_MODULES(GNOME_APPLETS, libpanel-applet >= 3.24.1)
+PKG_CHECK_MODULES(LIBGNOMEPANEL, libgnome-panel >= 3.38.0)
 PKG_CHECK_MODULES(GNOME_MENU, libgnome-menu-3.0)
 PKG_CHECK_MODULES(STARTUP_NOTIFICATION, libstartup-notification-1.0 >= 0.12)
 
-
-AC_ARG_WITH([libpanel-applet-dir], [], [LIBPANEL_APPLET_DIR=$withval], [LIBPANEL_APPLET_DIR=""])
-if test "$LIBPANEL_APPLET_DIR" == ""; then
-	LIBPANEL_APPLET_DIR=`$PKG_CONFIG --variable=libpanel_applet_dir libpanel-applet`
-fi
-
-AC_MSG_NOTICE([installing applets in $LIBPANEL_APPLET_DIR])
-AC_SUBST(LIBPANEL_APPLET_DIR)
-
+GNOME_PANEL_MODULES_DIR=`$PKG_CONFIG --variable=modulesdir libgnome-panel`
+AC_SUBST([GNOME_PANEL_MODULES_DIR], [$GNOME_PANEL_MODULES_DIR])
 
 AC_OUTPUT([
   Makefile
