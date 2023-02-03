@@ -1,3 +1,10 @@
+gooroom-applauncher-applet (0.4.1+grm3u1) unstable; urgency=medium
+
+  [ donghun ]
+  * [20a1b11b] Added drag and drop function
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 03 Feb 2023 16:05:37 +0900
+
 gooroom-applauncher-applet (0.4.0+grm3u1) unstable; urgency=medium
 
   [ subin.kim ]
