@@ -2,7 +2,7 @@ dnl ***************************
 dnl *** Initialize autoconf ***
 dnl ***************************
 AC_INIT([gooroom-applauncher-applet], [0.1.0])
-AC_PREREQ([2.63])
+AC_PREREQ([2.71])
 
 dnl ***********************
 dnl Initialize automake ***
@@ -15,17 +15,14 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 dnl *******************************
 dnl *** Check for UNIX variants ***
 dnl *******************************
-AC_AIX()
-AC_ISC_POSIX()
-AC_MINIX()
+AC_USE_SYSTEM_EXTENSIONS
+AC_SEARCH_LIBS([strerror],[cposix])
+AC_USE_SYSTEM_EXTENSIONS
 
 dnl ********************************
 dnl *** Check for basic programs ***
 dnl ********************************
-AC_PROG_CC()
 AM_PROG_CC_C_O()
-AC_PROG_LD()
-AC_PROG_INSTALL()
 IT_PROG_INTLTOOL([0.35.2])
 
 dnl **************************
@@ -34,13 +31,17 @@ dnl **************************
 LT_PREREQ([2.4])
 LT_INIT([disable-static])
 
+dnl **********************************
+dnl *** Check for standard headers ***
+dnl **********************************
+AC_CHECK_HEADERS([stdlib.h string.h errno.h unistd.h])
+
 dnl ******************************
 dnl *** Check for i18n support ***
 dnl ******************************
 GETTEXT_PACKAGE=gooroom-applauncher-applet
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Gettext Package])
-AM_GLIB_GNU_GETTEXT
 
 dnl ***************************
 dnl *** check for GSettings ***
@@ -56,9 +57,10 @@ PKG_CHECK_MODULES(STARTUP_NOTIFICATION, libstartup-notification-1.0 >= 0.12)
 GNOME_PANEL_MODULES_DIR=`$PKG_CONFIG --variable=modulesdir libgnome-panel`
 AC_SUBST([GNOME_PANEL_MODULES_DIR], [$GNOME_PANEL_MODULES_DIR])
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
   Makefile
   src/Makefile
   data/Makefile
   po/Makefile.in
 ])
+AC_OUTPUT

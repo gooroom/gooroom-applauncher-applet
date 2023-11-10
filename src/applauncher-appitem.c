@@ -134,7 +134,13 @@ applauncher_appitem_change_app (ApplauncherAppItem *item,
 		gtk_image_set_from_gicon (GTK_IMAGE (priv->icon), icon, GTK_ICON_SIZE_BUTTON);
 		gtk_image_set_pixel_size (GTK_IMAGE (priv->icon), priv->icon_size);
 	} else {
-		gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon), NULL, GTK_ICON_SIZE_BUTTON);
+		if (name) {
+			icon = g_themed_icon_new ("unknown-app");
+			gtk_image_set_from_gicon (GTK_IMAGE (priv->icon), icon, GTK_ICON_SIZE_BUTTON);
+			gtk_image_set_pixel_size (GTK_IMAGE (priv->icon), priv->icon_size);
+		} else {
+			gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon), NULL, GTK_ICON_SIZE_BUTTON);
+		}
 	}
 
 	memset (buf, 0x00, sizeof (buf));
@@ -240,7 +246,7 @@ applauncher_appitem_get_drag_surface (ApplauncherAppItem *item)
 
   text_layout = pango_layout_new (pcontext);
 
-  text = gtk_label_get_text (priv->label);
+  text = gtk_label_get_text (GTK_LABEL (priv->label));
 
   pango_layout_set_text (text_layout, text, -1);
   pango_layout_set_auto_dir (text_layout, TRUE);

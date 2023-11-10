@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 -->
+<!-- Generated with glade 3.40.0 -->
 <interface domain="gooroom-applauncher-applet">
   <requires lib="gtk+" version="3.20"/>
   <template class="ApplauncherAppItem" parent="GtkButton">
     <property name="name">appitem</property>
     <property name="visible">True</property>
-    <property name="can_focus">True</property>
-    <property name="receives_default">True</property>
+    <property name="can-focus">True</property>
+    <property name="receives-default">True</property>
     <property name="relief">none</property>
     <child>
       <object class="GtkBox" id="appitem_inner_box">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="border_width">10</property>
+        <property name="can-focus">False</property>
+        <property name="border-width">10</property>
         <property name="orientation">vertical</property>
         <property name="spacing">15</property>
         <child>
           <object class="GtkImage" id="icon">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can-focus">False</property>
             <property name="valign">center</property>
-            <property name="icon_name">applications-other</property>
+            <property name="icon-name">applications-other</property>
             <property name="icon_size">6</property>
           </object>
           <packing>
-            <property name="expand">False</property>
+            <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
@@ -32,12 +32,13 @@
         <child>
           <object class="GtkLabel" id="label">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can-focus">False</property>
+            <property name="valign">center</property>
             <property name="justify">center</property>
             <property name="wrap">True</property>
-            <property name="wrap_mode">word-char</property>
+            <property name="wrap-mode">word-char</property>
             <property name="ellipsize">end</property>
-            <property name="max_width_chars">1</property>
+            <property name="max-width-chars">1</property>
             <property name="lines">2</property>
           </object>
           <packing>

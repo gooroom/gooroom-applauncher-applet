@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gooroom-applauncher-applet 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-07-08 12:00+0900\n"
+"POT-Creation-Date: 2023-11-14 13:47+0900\n"
 "PO-Revision-Date: 2018-12-28 01:53+0900\n"
 "Language-Team: gooroom <gooroom@gooroom.kr>\n"
 "Language: en\n"
@@ -28,11 +28,11 @@ msgstr "Application launcher applet for GNOME panel"
 msgid "Application Launching Error"
 msgstr "Application Launching Error"
 
-#: ../src/applauncher-applet.c:683
+#: ../src/applauncher-applet.c:680
 msgid "Failed to launch application"
 msgstr "Failed to launch application"
 
-#: ../src/applauncher-window.c:909
+#: ../src/applauncher-window.c:961
 msgid "All Programs"
 msgstr "All Programs"
 

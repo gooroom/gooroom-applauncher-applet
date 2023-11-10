@@ -5,7 +5,7 @@ Maintainer: Gooroom Maintainers <gooroom@gooroom.kr>
 Build-Depends: automake (>= 1.13),
                autoconf,
                autotools-dev,
-               debhelper (>= 13),
+               debhelper-compat (= 13),
                gnome-pkg-tools (>= 0.17),
                gnome-common,
                libgnome-menu-3-dev,

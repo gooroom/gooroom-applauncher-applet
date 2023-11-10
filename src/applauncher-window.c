@@ -105,8 +105,8 @@ struct _ApplauncherWindowPrivate
 
 	GdkDevice *grab_pointer;
 
-	gboolean *draging;
-	gboolean *drag_copied;
+	gboolean draging;
+	gboolean drag_copied;
 };
 
 enum {
@@ -508,7 +508,8 @@ update_grid (ApplauncherWindow *window)
 					continue;
 				}
 
-				GAppInfo *app_info = G_APP_INFO (gmenu_tree_entry_get_app_info (entry));
+				GDesktopAppInfo *desktop_app_info = gmenu_tree_entry_get_app_info (entry);
+				GAppInfo *app_info = G_APP_INFO (desktop_app_info);
 
 				if (!app_info) {
 					item_iter++;
@@ -519,7 +520,7 @@ update_grid (ApplauncherWindow *window)
 				GIcon *icon = g_app_info_get_icon (app_info);
 				const gchar *name = g_app_info_get_name (app_info);
 				const gchar *desc = g_app_info_get_description (app_info);
-				const gchar *path = g_desktop_app_info_get_filename (app_info);
+				const gchar *path = g_desktop_app_info_get_filename (desktop_app_info);
 
 				gtk_widget_set_sensitive (GTK_WIDGET (item), TRUE);
 				if (desc == NULL || g_strcmp0 (desc, "") == 0) {
@@ -647,8 +648,8 @@ on_appitem_button_clicked_cb (GtkButton *button, gpointer data)
 	if (!entry)
 		return;
 
-	GAppInfo *app_info = G_APP_INFO (gmenu_tree_entry_get_app_info (entry));
-	const gchar *desktop_id = g_desktop_app_info_get_filename (G_DESKTOP_APP_INFO (app_info));
+	GDesktopAppInfo *desktop_app_info = gmenu_tree_entry_get_app_info (entry);
+	const gchar *desktop_id = g_desktop_app_info_get_filename (desktop_app_info);
 
 	g_signal_emit (G_OBJECT (window), signals[LAUNCH_DESKTOP], 0, desktop_id);
 }
@@ -903,11 +904,11 @@ get_max_size_of_appitem (ApplauncherWindow *window)
 	for (l = window->priv->apps; l; l = l->next) {
 		GMenuTreeEntry *entry = (GMenuTreeEntry *)l->data;
 		if (entry) {
-			GAppInfo *app_info = G_APP_INFO (gmenu_tree_entry_get_app_info (entry));
-			if (app_info) {
-				GIcon *icon = g_app_info_get_icon (app_info);
-				const gchar *name = g_app_info_get_name (app_info);
-				const gchar *path = g_desktop_app_info_get_filename (app_info);
+			GDesktopAppInfo *desktop_app_info = gmenu_tree_entry_get_app_info (entry);
+			if (desktop_app_info) {
+				GIcon *icon = g_app_info_get_icon (G_APP_INFO (desktop_app_info));
+				const gchar *name = g_app_info_get_name (G_APP_INFO (desktop_app_info));
+				const gchar *path = g_desktop_app_info_get_filename (desktop_app_info);
 
 				ApplauncherAppItem *item = applauncher_appitem_new (window->priv->icon_size);
 				applauncher_appitem_change_app (item, icon, name, NULL, path);
@@ -941,14 +942,22 @@ populate_dirs (ApplauncherWindow *window)
 
 		GIcon *icon;
 		const char *name;
-		if (g_str_has_suffix (gmenu_tree_directory_get_desktop_file_path (dir), "chrome-apps.directory"))
+		const char *dir_dt_path;
+		dir_dt_path = gmenu_tree_directory_get_desktop_file_path (dir);
+
+		if (g_str_has_suffix (dir_dt_path, "chrome-apps.directory"))
 			continue;
 
-		if (gmenu_tree_directory_get_desktop_file_path (dir) != NULL) {
-			icon = gmenu_tree_directory_get_icon (dir);
+		if (dir_dt_path != NULL) {
 			name = gmenu_tree_directory_get_name (dir);
+
+			if (g_str_has_suffix (dir_dt_path, "X-GNOME-Menu-Applications.directory")) {
+				icon = g_themed_icon_new ("applications-all");
+			} else {
+				icon = gmenu_tree_directory_get_icon (dir);
+			}
 		} else {
-			icon = icon = g_themed_icon_new ("applications-other");
+			icon = g_themed_icon_new ("applications-all");
 			name = _("All Programs");
 		}
 
@@ -1082,7 +1091,7 @@ drag_begin (GtkWidget      *widget,
 
 	priv->draging = TRUE;
 
-	gtk_widget_set_sensitive (GTK_BUTTON (widget), FALSE);
+	gtk_widget_set_sensitive (widget, FALSE);
 }
 
 static void
@@ -1129,7 +1138,7 @@ drag_end (GtkWidget        *widget,
 		priv->draging = FALSE;
 	}
 
-	gtk_widget_set_sensitive (GTK_BUTTON (widget), TRUE);
+	gtk_widget_set_sensitive (widget, TRUE);
 }
 
 
