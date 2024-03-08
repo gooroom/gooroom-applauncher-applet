@@ -1,3 +1,10 @@
+gooroom-applauncher-applet (4.0.0+grm4u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [c5472611] Rebased on gooroom-4.0
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 08 Mar 2024 13:31:22 +0900
+
 gooroom-applauncher-applet (0.4.1+grm3u1) unstable; urgency=medium
 
   [ donghun ]
