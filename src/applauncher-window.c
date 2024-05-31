@@ -103,10 +103,7 @@ struct _ApplauncherWindowPrivate
 	guint idle_entry_changed_id;
 	guint idle_directory_changed_id;
 
-	GdkDevice *grab_pointer;
-
-	gboolean draging;
-	gboolean drag_copied;
+	gboolean drag_failed;
 };
 
 enum {
@@ -592,43 +589,6 @@ do_search (ApplauncherWindow *window)
 }
 
 static void
-grab_pointer (ApplauncherWindow *window)
-{
-	GdkSeat *seat;
-	GdkDevice *device, *pointer;
-
-	device = gtk_get_current_event_device ();
-
-	if (!device) {
-		GdkDisplay *display;
-
-		display = gtk_widget_get_display (GTK_WIDGET (window));
-		device = gdk_seat_get_pointer (gdk_display_get_default_seat (display));
-	}
-
-	if (gdk_device_get_source (device) == GDK_SOURCE_KEYBOARD)
-		window->priv->grab_pointer = gdk_device_get_associated_device (device);
-	else
-		window->priv->grab_pointer = device;
-
-	gtk_widget_grab_focus (GTK_WIDGET (window));
-
-	seat = gdk_device_get_seat (window->priv->grab_pointer);
-	gdk_seat_grab (seat, gtk_widget_get_window (GTK_WIDGET (window)),
-                          GDK_SEAT_CAPABILITY_ALL, TRUE,
-                          NULL, NULL, NULL, NULL);
-}
-
-static void
-ungrab_pointer (ApplauncherWindow *window)
-{
-	if (window->priv->grab_pointer) {
-		gdk_seat_ungrab (gdk_device_get_seat (window->priv->grab_pointer));
-		window->priv->grab_pointer = NULL;
-	}
-}
-
-static void
 on_appitem_button_clicked_cb (GtkButton *button, gpointer data)
 {
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
@@ -1078,9 +1038,9 @@ static const GtkTargetEntry target_table[] = {
 static void
 drag_begin (GtkWidget      *widget,
             GdkDragContext *context,
-            gpointer        data)
+            gpointer        user_data)
 {
-	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (user_data);
 	ApplauncherWindowPrivate *priv = window->priv;
 	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
 
@@ -1089,9 +1049,22 @@ drag_begin (GtkWidget      *widget,
 	gtk_drag_set_icon_surface (context, surface);
 	cairo_surface_destroy (surface);
 
-	priv->draging = TRUE;
+	priv->drag_failed = FALSE;
 
 	gtk_widget_set_sensitive (widget, FALSE);
+}
+
+static gboolean
+drag_data_failed (GtkWidget *widget,
+                  GdkDragContext *context,
+                  GtkDragResult result,
+                  gpointer user_data)
+{
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (user_data);
+
+	window->priv->drag_failed = TRUE;
+
+	return FALSE;
 }
 
 static void
@@ -1100,10 +1073,10 @@ drag_data_get (GtkWidget *widget,
                GtkSelectionData *selection_data,
                guint info,
                guint32 time,
-               gpointer data)
+               gpointer user_data)
 {
 
-	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (user_data);
 	ApplauncherAppItem *item = APPLAUNCHER_APPITEM (widget);
 	ApplauncherWindowPrivate *priv = window->priv;
 
@@ -1120,22 +1093,34 @@ drag_data_get (GtkWidget *widget,
                           gtk_selection_data_get_target (selection_data),
                           8, (guchar *) result->str, result->len);
 	g_string_free (result, TRUE);
-
-	priv->drag_copied = TRUE;
 }
 
 static void
 drag_end (GtkWidget        *widget,
           GdkDragContext   *context,
-          gpointer         data)
+          gpointer          user_data)
 {
-	ApplauncherWindow *window = APPLAUNCHER_WINDOW (data);
+	gint x, y;
+	GdkSeat *seat = NULL;
+	GdkDevice *device = NULL;
+	GdkDisplay *display = NULL;
+	ApplauncherWindow *window = APPLAUNCHER_WINDOW (user_data);
 	ApplauncherWindowPrivate *priv = window->priv;
 
-	if (priv->drag_copied) {
-		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
-		priv->drag_copied = FALSE;
-		priv->draging = FALSE;
+	display = gdk_display_get_default ();
+	seat = gdk_display_get_default_seat (display);
+	device = gdk_seat_get_pointer (seat);
+
+	gdk_device_get_position (device, NULL, &x, &y);
+
+	// destroy window if user clicks outside
+	if ((x <= priv->x) ||
+        (y <= priv->y) ||
+        (x >= priv->x + priv->width) ||
+        (y >= priv->y + priv->height))
+	{
+		if (!priv->drag_failed)
+			g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 	}
 
 	gtk_widget_set_sensitive (widget, TRUE);
@@ -1156,6 +1141,7 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
 			g_signal_handlers_disconnect_by_func (item, on_appitem_button_clicked_cb, window);
 			g_signal_handlers_disconnect_by_func (item, drag_begin, window);
 			g_signal_handlers_disconnect_by_func (item, drag_data_get, window);
+			g_signal_handlers_disconnect_by_func (item, drag_data_failed, window);
 			g_signal_handlers_disconnect_by_func (item, drag_end, window);
 			gtk_widget_destroy (GTK_WIDGET (item));
 			item = NULL;
@@ -1191,9 +1177,10 @@ populate_apps (ApplauncherWindow *window, GdkRectangle *workarea)
 			gtk_drag_source_set (GTK_WIDGET(item), GDK_BUTTON1_MASK,
                            target_table, G_N_ELEMENTS (target_table), GDK_ACTION_COPY);
 
-			g_signal_connect (GTK_WIDGET(item), "drag_begin", G_CALLBACK (drag_begin), window);
-			g_signal_connect (GTK_WIDGET(item), "drag_data_get", G_CALLBACK (drag_data_get), window);
-			g_signal_connect (GTK_WIDGET(item), "drag_end", G_CALLBACK (drag_end), window);
+			g_signal_connect (GTK_WIDGET (item), "drag-begin", G_CALLBACK (drag_begin), window);
+			g_signal_connect (GTK_WIDGET (item), "drag-data-get", G_CALLBACK (drag_data_get), window);
+			g_signal_connect (GTK_WIDGET (item), "drag-failed", G_CALLBACK (drag_data_failed), window);
+			g_signal_connect (GTK_WIDGET (item), "drag-end", G_CALLBACK (drag_end), window);
 		}
 	}
 }
@@ -1271,10 +1258,10 @@ applauncher_window_key_press_event (GtkWidget   *widget,
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
 
 	if (event->keyval == GDK_KEY_Escape) {
-		ungrab_pointer (window);
 		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 		return TRUE;
 	}
+
 
 	return GTK_WIDGET_CLASS (applauncher_window_parent_class)->key_press_event (widget, event);
 }
@@ -1311,7 +1298,6 @@ applauncher_window_button_press_event (GtkWidget      *widget,
         (event->x_root >= priv->x + priv->width) ||
         (event->y_root >= priv->y + priv->height))
 	{
-		ungrab_pointer (window);
 		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 	} else {
 		gtk_widget_grab_focus (GTK_WIDGET (priv->ent_search));
@@ -1343,10 +1329,6 @@ applauncher_window_map_event (GtkWidget   *widget,
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
 	ApplauncherWindowPrivate *priv = window->priv;
 
-//	gtk_window_set_keep_above (GTK_WINDOW (window), TRUE);
-
-	grab_pointer (window);
-
     // Focus search entry
 	gtk_widget_grab_focus (GTK_WIDGET (priv->ent_search));
 
@@ -1358,19 +1340,8 @@ applauncher_window_focus_out_event (GtkWidget     *widget,
                                     GdkEventFocus *event)
 {
 	ApplauncherWindow *window = APPLAUNCHER_WINDOW (widget);
-	ApplauncherWindowPrivate *priv = window->priv;
 
-	ungrab_pointer (window);
-
-	if (!priv->draging)
-	{
-		g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
-	}
-	else
-	{
-		grab_pointer (window);
-		priv->draging = FALSE;
-	}
+	g_signal_emit (G_OBJECT (window), signals[CLOSED], 0, APPLAUNCHER_WINDOW_CLOSED);
 
 	return GTK_WIDGET_CLASS (applauncher_window_parent_class)->focus_out_event (widget, event);
 }
@@ -1396,9 +1367,6 @@ applauncher_window_init (ApplauncherWindow *window)
 	priv->grid_x = DEFAULT_GRID_X;
 	priv->grid_y = DEFAULT_GRID_Y;
 	priv->icon_size = DEFAULT_ICON_SIZE;
-	priv->grab_pointer = NULL;
-	priv->draging = FALSE;
-	priv->drag_copied = FALSE;
 
 	GdkMonitor *m = gdk_display_get_primary_monitor (gdk_display_get_default ());
 	gdk_monitor_get_geometry (m, &priv->workarea);
@@ -1536,10 +1504,10 @@ applauncher_window_new (GtkWidget *parent)
 	GtkWidget *toplevel = gtk_widget_get_toplevel (parent);
 
 	return g_object_new (WINDOW_TYPE_APPLAUNCHER,
-                         "type", GTK_WINDOW_TOPLEVEL,
-                         "type-hint", GDK_WINDOW_TYPE_HINT_POPUP_MENU,
+//                         "type", GTK_WINDOW_TOPLEVEL,
+//                         "type-hint", GDK_WINDOW_TYPE_HINT_POPUP_MENU,
+//                         "modal", TRUE,
                          "transient-for", toplevel,
-                         "modal", TRUE,
                          NULL);
 }
 
