@@ -905,8 +905,8 @@ populate_dirs (ApplauncherWindow *window)
 		const char *dir_dt_path;
 		dir_dt_path = gmenu_tree_directory_get_desktop_file_path (dir);
 
-		if (g_str_has_suffix (dir_dt_path, "chrome-apps.directory"))
-			continue;
+		//if (g_str_has_suffix (dir_dt_path, "chrome-apps.directory"))
+		//	continue;
 
 		if (dir_dt_path != NULL) {
 			name = gmenu_tree_directory_get_name (dir);
