@@ -1,3 +1,14 @@
+gooroom-applauncher-applet (4.2.0+grm4u1) unstable; urgency=medium
+
+  [ boyeon.choi ]
+  * [fd5067f6] [Bug:5618] Fix the category when using browser's shortcut
+
+  [ cjheo ]
+  * [1dbfa78e] Fixed Korean Language (Hangul) searching error.
+  * [cf53935c] Fixed issue where font size does not change when setting text-scaling-factor
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 30 Aug 2024 15:17:44 +0900
+
 gooroom-applauncher-applet (4.1.0+grm4u1) unstable; urgency=medium
 
   [ cjheo ]
