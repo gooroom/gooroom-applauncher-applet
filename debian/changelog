@@ -1,3 +1,10 @@
+gooroom-applauncher-applet (4.1.0+grm4u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [0715fae2] Fixed bug where virtual keyboard could not be used.
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Fri, 31 May 2024 10:56:48 +0900
+
 gooroom-applauncher-applet (4.0.0+grm4u1) unstable; urgency=medium
 
   [ cjheo ]
